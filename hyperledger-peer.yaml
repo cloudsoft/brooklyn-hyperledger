@@ -1,0 +1,10 @@
+name: Hyperledger Peer
+location: softlayer
+
+services:
+- type: docker-engine
+  name: Hyperledger Peer Host
+
+  brooklyn.children:
+  - type: hyperledger-peer
+    name: Hyperledger Peer Node

@@ -1,0 +1,55 @@
+brooklyn.catalog:
+  version: 0.1.0_SNAPSHOT
+
+  items:
+  - id: docker-engine
+    description: The engine for running Docker containers
+    itemType: entity
+    item:
+
+      name: Docker Engine (host)
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+
+      install.command: |
+        sudo yum -y update
+        sudo tee /etc/yum.repos.d/docker.repo <<-'EOF'
+        [dockerrepo]
+        name=Docker Repository
+        baseurl=https://yum.dockerproject.org/repo/main/centos/$releasever/
+        enabled=1
+        gpgcheck=1
+        gpgkey=https://yum.dockerproject.org/gpg
+        EOF
+        sudo yum -y install docker-engine
+
+        # Configure Docker
+        sudo mkdir /etc/systemd/system/docker.service.d
+        echo "[Service]" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
+        echo "ExecStart=" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
+        echo 'ExecStart=/usr/bin/docker daemon -D --api-cors-header="*" -H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock' | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
+        sudo systemctl daemon-reload
+
+      launch.command:       sudo service docker start
+      stop.command:         sudo service docker stop
+      checkRunning.command: sudo service docker status
+
+      provisioning.properties:
+        osFamily: centos
+
+      childStartMode: foreground_late
+
+  - id: hyperledger-peer
+    description: A Hyperledger Fabric peer node
+    itemType: entity
+    item:
+
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: Hyperledger Peer Node
+
+      launch.command:  |
+        sudo docker pull joequant/hyperledger
+        sudo docker run --name=vp0 --restart=unless-stopped -d -p 5000:5000 -p 30303:30303 -e CORE_PEER_ID=vp0 -e CORE_VM_ENDPOINT=http://172.17.0.1:4243 -e CORE_PEER_ADDRESSAUTODETECT=true joequant/hyperledger peer peer
+
+      checkRunning.command: |
+        # TODO `sudo docker exec -it vp0 peer status` retrieves the peer's status but does not result in `service.isUp` true
+        sudo service docker status
