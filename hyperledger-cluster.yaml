@@ -1,0 +1,8 @@
+name: "Hyperledger Fabric Cluster"
+location: softlayer
+
+services:
+- type: hyperledger-cluster
+  name: Hyperledger Fabric Cluster
+  brooklyn.config:
+    initialSize: 4

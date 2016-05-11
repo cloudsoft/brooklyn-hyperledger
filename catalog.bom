@@ -22,6 +22,7 @@ brooklyn.catalog:
         EOF
         sudo yum -y install docker-engine
 
+      post.install.command: |
         # Configure Docker
         sudo mkdir /etc/systemd/system/docker.service.d
         echo "[Service]" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
@@ -29,9 +30,14 @@ brooklyn.catalog:
         echo 'ExecStart=/usr/bin/docker daemon -D --api-cors-header="*" -H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock' | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
         sudo systemctl daemon-reload
 
-      launch.command:       sudo service docker start
-      stop.command:         sudo service docker stop
-      checkRunning.command: sudo service docker status
+      launch.command: |
+        sudo service docker start
+
+      stop.command: |
+        sudo service docker stop
+
+      checkRunning.command: |
+        sudo service docker status
 
       provisioning.properties:
         osFamily: centos
@@ -39,17 +45,102 @@ brooklyn.catalog:
       childStartMode: foreground_late
 
   - id: hyperledger-peer
-    description: A Hyperledger Fabric peer node
+    description: A Hyperledger Fabric peer running in a Docker container
     itemType: entity
     item:
 
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: Hyperledger Peer Node
+      name: Hyperledger Peer Docker Container
+
+      shell.env:
+        IS_ROOT_NODE: $brooklyn:config("is.root.node")
+        HYPERLEDGER_PEER_ID: $brooklyn:config("hyperledger.peer.id")
+        HYPERLEDGER_CLUSTER_SIZE: $brooklyn:config("hyperledger.cluster.size")
+        HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:config("hyperledger.root.node.address")
 
       launch.command:  |
         sudo docker pull joequant/hyperledger
-        sudo docker run --name=vp0 --restart=unless-stopped -d -p 5000:5000 -p 30303:30303 -e CORE_PEER_ID=vp0 -e CORE_VM_ENDPOINT=http://172.17.0.1:4243 -e CORE_PEER_ADDRESSAUTODETECT=true joequant/hyperledger peer peer
+
+        if [ $IS_ROOT_NODE == "true" ]
+        then
+            sudo docker run --name=$HYPERLEDGER_PEER_ID \
+                --restart=unless-stopped \
+                -d \
+                -p 5000:5000 \
+                -p 30303:30303 \
+                -p 30304:30304 \
+                -p 31315:31315 \
+                -e CORE_VM_ENDPOINT=http://172.17.0.1:4243 \
+                -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
+                -e CORE_PEER_ADDRESSAUTODETECT=true \
+                -e CORE_PEER_NETWORKID=dev \
+                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
+                -e CORE_PBFT_GENERAL_MODE=classic \
+                -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
+                -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
+                joequant/hyperledger peer peer
+        else
+            sudo docker run --name=$HYPERLEDGER_PEER_ID \
+                --restart=unless-stopped \
+                -d \
+                -p 30303:30303 \
+                -p 30304:30304 \
+                -p 31315:31315 \
+                -e CORE_VM_ENDPOINT=http://172.17.0.1:4243 \
+                -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
+                -e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:30303 \
+                -e CORE_PEER_ADDRESSAUTODETECT=true \
+                -e CORE_PEER_NETWORKID=dev \
+                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
+                -e CORE_PBFT_GENERAL_MODE=classic \
+                -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
+                -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
+                joequant/hyperledger peer peer
+        fi
 
       checkRunning.command: |
-        # TODO `sudo docker exec -it vp0 peer status` retrieves the peer's status but does not result in `service.isUp` true
-        sudo service docker status
+        # TODO actually query peer's status using `peer status` in container
+        sudo docker inspect -f {{.State.Running}} $HYPERLEDGER_PEER_ID
+
+  - id: hyperledger-node
+    description: A Docker host running a Hyperledger Fabric peer node in a Docker container
+    itemType: entity
+    item:
+
+      name: Hyperledger Peer Docker Host
+      type: docker-engine
+
+      brooklyn.children:
+      - type: hyperledger-peer
+        id: my-hyperledger-peer
+        name: Hyperledger Peer Node
+
+  - id: hyperledger-cluster
+    name: Hyperledger Fabric Validating Nodes
+    item:
+      type: org.apache.brooklyn.entity.group.DynamicCluster
+
+      firstMemberSpec:
+        $brooklyn:entitySpec:
+          id: first-hyperledger-node
+          type: hyperledger-node
+          name: Hyperledger Root Node
+
+          brooklyn.config:
+            is.root.node: true
+            hyperledger.peer.id: vp0
+            hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
+            hyperledger.root.node.address: $brooklyn:attributeWhenReady("host.address")
+
+      memberSpec:
+        $brooklyn:entitySpec:
+          type: hyperledger-node
+          name: Hyperledger Peer Node
+
+          brooklyn.config:
+            is.root.node: false
+            hyperledger.peer.id: $brooklyn:formatString("vp%s", $brooklyn:config("cluster.member.id"))
+            hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
+            hyperledger.root.node.address: $brooklyn:component("first-hyperledger-node").attributeWhenReady("host.address")
+
+            launch.latch: $brooklyn:component("first-hyperledger-node").attributeWhenReady("service.isUp")
