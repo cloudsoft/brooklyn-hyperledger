@@ -59,7 +59,7 @@ brooklyn.catalog:
         HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:config("hyperledger.root.node.address")
 
       launch.command:  |
-        sudo docker pull joequant/hyperledger
+        sudo docker pull yeasy/hyperledger-peer:pbft
 
         if [ $IS_ROOT_NODE == "true" ]
         then
@@ -78,7 +78,7 @@ brooklyn.catalog:
                 -e CORE_PBFT_GENERAL_MODE=classic \
                 -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
                 -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
-                joequant/hyperledger peer peer
+                yeasy/hyperledger-peer:pbft peer peer
         else
             sudo docker run --name=$HYPERLEDGER_PEER_ID \
                 --restart=unless-stopped \
@@ -95,7 +95,7 @@ brooklyn.catalog:
                 -e CORE_PBFT_GENERAL_MODE=classic \
                 -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
                 -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
-                joequant/hyperledger peer peer
+                yeasy/hyperledger-peer:pbft peer peer
         fi
 
       checkRunning.command: |
