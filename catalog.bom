@@ -63,11 +63,11 @@ brooklyn.catalog:
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
 
       launch.command:  |
-        sudo docker pull yeasy/hyperledger:latest
-        sudo docker tag yeasy/hyperledger:latest hyperledger/fabric-baseimage:latest
-        sudo docker pull yeasy/hyperledger-peer:latest
-        sudo docker pull yeasy/hyperledger-peer:noops
-        sudo docker pull yeasy/hyperledger-peer:pbft
+        sudo docker pull mikezaccardo/hyperledger:latest
+        sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
+        sudo docker pull mikezaccardo/hyperledger-peer:latest
+        sudo docker pull mikezaccardo/hyperledger-peer:noops
+        sudo docker pull mikezaccardo/hyperledger-peer:pbft
 
         if [ $IS_ROOT_NODE == "true" ]
         then
@@ -86,7 +86,7 @@ brooklyn.catalog:
                 -e CORE_LOGGING_LEVEL=debug \
                 -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
                 -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
-                yeasy/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+                mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
         else
             nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
                 --restart=unless-stopped \
@@ -103,7 +103,7 @@ brooklyn.catalog:
                 -e CORE_LOGGING_LEVEL=debug \
                 -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
                 -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
-                yeasy/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+                mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
         fi
 
       checkRunning.command: |
