@@ -128,6 +128,11 @@ brooklyn.catalog:
     item:
       type: org.apache.brooklyn.entity.group.DynamicCluster
 
+      brooklyn.config:
+        initialSize: 4
+        minRam: 4gb
+        installDevUrandom: true
+
       firstMemberSpec:
         $brooklyn:entitySpec:
           id: first-hyperledger-node
