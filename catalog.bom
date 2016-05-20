@@ -145,6 +145,101 @@ brooklyn.catalog:
             hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
             hyperledger.root.node.address: $brooklyn:attributeWhenReady("host.address")
 
+          brooklyn.initializers:
+          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+            brooklyn.config:
+              name: Deploy Chaincode
+              description: Deploys an example chaincode
+
+              command: |
+                timestamp=$(date +%s)
+
+                curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/deploy-template.json
+                sed -i "s/PARTY_A/${party_a}/g" body-${timestamp}.json
+                sed -i "s/PARTY_B/${party_b}/g" body-${timestamp}.json
+                sed -i "s/AMOUNT_A/${amount_a}/g" body-${timestamp}.json
+                sed -i "s/AMOUNT_B/${amount_b}/g" body-${timestamp}.json
+                sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
+
+                curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
+
+              parameters:
+                rest_endpoint:
+                  description: "The Fabric REST endpoint URL"
+                  default_value: "ROOT_NODE_URL_HERE"
+                party_a:
+                  description: "The name of the first party"
+                  defaultValue: "a"
+                party_b:
+                  description: "The name of the second party"
+                  defaultValue: "b"
+                amount_a:
+                  description: "The amount of value that the first party starts with"
+                  defaultValue: "1000"
+                amount_b:
+                  description: "The amount of value that the second party starts with"
+                  defaultValue: "2000"
+
+          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+            brooklyn.config:
+              name: Invoke Chaincode
+              description: Invokes an example chaincode
+
+              command: |
+                timestamp=$(date +%s)
+
+                curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/invoke-template.json
+                sed -i "s/NAME/${name}/g" body-${timestamp}.json
+                sed -i "s/PARTY_A/${party_a}/g" body-${timestamp}.json
+                sed -i "s/PARTY_B/${party_b}/g" body-${timestamp}.json
+                sed -i "s/AMOUNT/${amount}/g" body-${timestamp}.json
+                sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
+
+                curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
+
+              parameters:
+                rest_endpoint:
+                  description: "The Fabric REST endpoint URL"
+                  default_value: $brooklyn:formatString("%s", $brooklyn:config("hyperledger.root.node.address"))
+                name:
+                  description: "The chaincode container name (hash)"
+                  defaultValue: "ROOT_NODE_URL_HERE"
+                party_a:
+                  description: "The name of the withdrawing party"
+                  defaultValue: "a"
+                party_b:
+                  description: "The name of the depositing party"
+                  defaultValue: "b"
+                amount:
+                  description: "The amount of value to transfer"
+                  defaultValue: "100"
+
+          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+            brooklyn.config:
+              name: Query Chaincode
+              description: Queries an example chaincode
+
+              command: |
+                timestamp=$(date +%s)
+
+                curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/query-template.json
+                sed -i "s/NAME/${name}/g" body-${timestamp}.json
+                sed -i "s/PARTY/${party}/g" body-${timestamp}.json
+                sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
+
+                curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
+
+              parameters:
+                rest_endpoint:
+                  description: "The Fabric REST endpoint URL"
+                  default_value: "ROOT_NODE_URL_HERE"
+                name:
+                  description: "The chaincode container name (hash)"
+                  defaultValue: "NAME_HERE"
+                party:
+                  description: "The name of the party whose balance to query"
+                  defaultValue: "a"
+
       memberSpec:
         $brooklyn:entitySpec:
           type: hyperledger-node
@@ -157,3 +252,12 @@ brooklyn.catalog:
             hyperledger.root.node.address: $brooklyn:component("first-hyperledger-node").attributeWhenReady("host.address")
 
             launch.latch: $brooklyn:component("first-hyperledger-node").attributeWhenReady("service.isUp")
+
+      brooklyn.enrichers:
+      - type: org.apache.brooklyn.enricher.stock.Aggregator
+        brooklyn.config:
+          uniqueTag: node-address-aggregator
+          enricher.aggregator.excludeBlank: true
+          enricher.aggregating.fromMembers: true
+          enricher.sourceSensor: $brooklyn:sensor("host.address")
+          enricher.targetSensor: $brooklyn:sensor("node.host.address.list")

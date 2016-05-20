@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "method": "invoke",
+  "params": {
+      "type": 1,
+      "chaincodeID":{
+          "name":"NAME"
+      },
+      "ctorMsg": {
+         "function":"invoke",
+         "args":["PARTY_A", "PARTY_B", "AMOUNT"]
+      }
+  },
+  "id": TRANSACTION_ID
+}

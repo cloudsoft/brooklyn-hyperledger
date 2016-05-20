@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "method": "deploy",
+  "params": {
+      "type": 1,
+      "chaincodeID":{
+          "path":"github.com/hyperledger/fabric/examples/chaincode/go/chaincode_example02"
+      },
+      "ctorMsg": {
+          "function":"init",
+          "args":["PARTY_A", "AMOUNT_A", "PARTY_B", "AMOUNT_B"]
+      }
+  },
+  "id": TRANSACTION_ID
+}
