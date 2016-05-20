@@ -44,6 +44,9 @@ brooklyn.catalog:
 
       provisioning.properties:
         osFamily: centos
+        minRam: 4gb
+        installDevUrandom: true
+        loginUser: centos
 
       childStartMode: foreground_late
 
