@@ -49,19 +49,18 @@ brooklyn.catalog:
 
       childStartMode: foreground_late
 
-  - id: hyperledger-peer
-    description: A Hyperledger Fabric peer running in a Docker container
+  - id: hyperledger-root
+    description: A Hyperledger Fabric root node running in a Docker container
     itemType: entity
     item:
 
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: Hyperledger Peer Docker Container
+      name: Hyperledger Root Docker Container
 
       shell.env:
-        IS_ROOT_NODE: $brooklyn:config("is.root.node")
         HYPERLEDGER_PEER_ID: $brooklyn:config("hyperledger.peer.id")
         HYPERLEDGER_CLUSTER_SIZE: $brooklyn:config("hyperledger.cluster.size")
-        HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:config("hyperledger.root.node.address")
+
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
 
       launch.command:  |
@@ -71,48 +70,179 @@ brooklyn.catalog:
         sudo docker pull mikezaccardo/hyperledger-peer:noops
         sudo docker pull mikezaccardo/hyperledger-peer:pbft
 
-        if [ $IS_ROOT_NODE == "true" ]
-        then
-            nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
-                --restart=unless-stopped \
-                -i \
-                -p 5000:5000 \
-                -p 30303:30303 \
-                -p 30304:30304 \
-                -p 31315:31315 \
-                -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-                -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
-                -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
-                -e CORE_PEER_ADDRESSAUTODETECT=false \
-                -e CORE_PEER_NETWORKID=dev \
-                -e CORE_LOGGING_LEVEL=debug \
-                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
-                -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
-                mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
-        else
-            nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
-                --restart=unless-stopped \
-                -i \
-                -p 30303:30303 \
-                -p 30304:30304 \
-                -p 31315:31315 \
-                -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-                -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
-                -e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:30303 \
-                -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
-                -e CORE_PEER_ADDRESSAUTODETECT=false \
-                -e CORE_PEER_NETWORKID=dev \
-                -e CORE_LOGGING_LEVEL=debug \
-                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
-                -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
-                mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
-        fi
+        nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
+            --restart=unless-stopped \
+            -i \
+            -p 5000:5000 \
+            -p 30303:30303 \
+            -p 30304:30304 \
+            -p 31315:31315 \
+            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
+            -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
+            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
+            -e CORE_PEER_ADDRESSAUTODETECT=false \
+            -e CORE_PEER_NETWORKID=dev \
+            -e CORE_LOGGING_LEVEL=debug \
+            -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
+            -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
+            mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
 
       checkRunning.command: |
         # TODO actually query peer's status using `peer status` in container
         sudo docker inspect -f {{.State.Running}} $HYPERLEDGER_PEER_ID
 
-  - id: hyperledger-node
+      brooklyn.initializers:
+      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+        brooklyn.config:
+          name: Deploy Chaincode
+          description: Deploys an example chaincode
+
+          command: |
+            timestamp=$(date +%s)
+
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/deploy-template.json
+            sed -i "s/PARTY_A/${party_a}/g" body-${timestamp}.json
+            sed -i "s/PARTY_B/${party_b}/g" body-${timestamp}.json
+            sed -i "s/AMOUNT_A/${amount_a}/g" body-${timestamp}.json
+            sed -i "s/AMOUNT_B/${amount_b}/g" body-${timestamp}.json
+            sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
+
+            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
+
+          parameters:
+            rest_endpoint:
+              description: "The Fabric REST endpoint URL"
+              default_value: "ROOT_NODE_URL_HERE"
+            party_a:
+              description: "The name of the first party"
+              defaultValue: "a"
+            party_b:
+              description: "The name of the second party"
+              defaultValue: "b"
+            amount_a:
+              description: "The amount of value that the first party starts with"
+              defaultValue: "1000"
+            amount_b:
+              description: "The amount of value that the second party starts with"
+              defaultValue: "2000"
+
+      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+        brooklyn.config:
+          name: Invoke Chaincode
+          description: Invokes an example chaincode
+
+          command: |
+            timestamp=$(date +%s)
+
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/invoke-template.json
+            sed -i "s/NAME/${name}/g" body-${timestamp}.json
+            sed -i "s/PARTY_A/${party_a}/g" body-${timestamp}.json
+            sed -i "s/PARTY_B/${party_b}/g" body-${timestamp}.json
+            sed -i "s/AMOUNT/${amount}/g" body-${timestamp}.json
+            sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
+
+            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
+
+          parameters:
+            rest_endpoint:
+              description: "The Fabric REST endpoint URL"
+              default_value: "ROOT_NODE_URL_HERE"
+            name:
+              description: "The chaincode container name (hash)"
+              defaultValue: "NAME_HERE"
+            party_a:
+              description: "The name of the withdrawing party"
+              defaultValue: "a"
+            party_b:
+              description: "The name of the depositing party"
+              defaultValue: "b"
+            amount:
+              description: "The amount of value to transfer"
+              defaultValue: "100"
+
+      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+        brooklyn.config:
+          name: Query Chaincode
+          description: Queries an example chaincode
+
+          command: |
+            timestamp=$(date +%s)
+
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/query-template.json
+            sed -i "s/NAME/${name}/g" body-${timestamp}.json
+            sed -i "s/PARTY/${party}/g" body-${timestamp}.json
+            sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
+
+            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
+
+          parameters:
+            rest_endpoint:
+              description: "The Fabric REST endpoint URL"
+              default_value: "ROOT_NODE_URL_HERE"
+            name:
+              description: "The chaincode container name (hash)"
+              defaultValue: "NAME_HERE"
+            party:
+              description: "The name of the party whose balance to query"
+              defaultValue: "a"
+
+  - id: hyperledger-peer
+    description: A Hyperledger Fabric peer node running in a Docker container
+    itemType: entity
+    item:
+
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: Hyperledger Peer Docker Container
+
+      shell.env:
+        HYPERLEDGER_PEER_ID: $brooklyn:config("hyperledger.peer.id")
+        HYPERLEDGER_CLUSTER_SIZE: $brooklyn:config("hyperledger.cluster.size")
+        HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:config("hyperledger.root.node.address")
+
+        HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+
+      launch.command:  |
+        sudo docker pull mikezaccardo/hyperledger:latest
+        sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
+        sudo docker pull mikezaccardo/hyperledger-peer:latest
+        sudo docker pull mikezaccardo/hyperledger-peer:noops
+        sudo docker pull mikezaccardo/hyperledger-peer:pbft
+
+        nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
+            --restart=unless-stopped \
+            -i \
+            -p 30303:30303 \
+            -p 30304:30304 \
+            -p 31315:31315 \
+            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
+            -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
+            -e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:30303 \
+            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
+            -e CORE_PEER_ADDRESSAUTODETECT=false \
+            -e CORE_PEER_NETWORKID=dev \
+            -e CORE_LOGGING_LEVEL=debug \
+            -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
+            -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
+            mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+
+      checkRunning.command: |
+        # TODO actually query peer's status using `peer status` in container
+        sudo docker inspect -f {{.State.Running}} $HYPERLEDGER_PEER_ID
+
+  - id: hyperledger-root-node
+    description: A Docker host running a Hyperledger Fabric root node in a Docker container
+    itemType: entity
+    item:
+
+      name: Hyperledger Root Docker Host
+      type: docker-engine
+
+      brooklyn.children:
+      - type: hyperledger-root
+        id: my-hyperledger-root
+        name: Hyperledger Root Node
+
+  - id: hyperledger-peer-node
     description: A Docker host running a Hyperledger Fabric peer node in a Docker container
     itemType: entity
     item:
@@ -135,123 +265,25 @@ brooklyn.catalog:
 
       firstMemberSpec:
         $brooklyn:entitySpec:
-          id: first-hyperledger-node
-          type: hyperledger-node
+          id: root-node
+          type: hyperledger-root-node
           name: Hyperledger Root Node
 
           brooklyn.config:
-            is.root.node: true
             hyperledger.peer.id: vp0
             hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
-            hyperledger.root.node.address: $brooklyn:attributeWhenReady("host.address")
-
-          brooklyn.initializers:
-          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-            brooklyn.config:
-              name: Deploy Chaincode
-              description: Deploys an example chaincode
-
-              command: |
-                timestamp=$(date +%s)
-
-                curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/deploy-template.json
-                sed -i "s/PARTY_A/${party_a}/g" body-${timestamp}.json
-                sed -i "s/PARTY_B/${party_b}/g" body-${timestamp}.json
-                sed -i "s/AMOUNT_A/${amount_a}/g" body-${timestamp}.json
-                sed -i "s/AMOUNT_B/${amount_b}/g" body-${timestamp}.json
-                sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
-
-                curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
-
-              parameters:
-                rest_endpoint:
-                  description: "The Fabric REST endpoint URL"
-                  default_value: "ROOT_NODE_URL_HERE"
-                party_a:
-                  description: "The name of the first party"
-                  defaultValue: "a"
-                party_b:
-                  description: "The name of the second party"
-                  defaultValue: "b"
-                amount_a:
-                  description: "The amount of value that the first party starts with"
-                  defaultValue: "1000"
-                amount_b:
-                  description: "The amount of value that the second party starts with"
-                  defaultValue: "2000"
-
-          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-            brooklyn.config:
-              name: Invoke Chaincode
-              description: Invokes an example chaincode
-
-              command: |
-                timestamp=$(date +%s)
-
-                curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/invoke-template.json
-                sed -i "s/NAME/${name}/g" body-${timestamp}.json
-                sed -i "s/PARTY_A/${party_a}/g" body-${timestamp}.json
-                sed -i "s/PARTY_B/${party_b}/g" body-${timestamp}.json
-                sed -i "s/AMOUNT/${amount}/g" body-${timestamp}.json
-                sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
-
-                curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
-
-              parameters:
-                rest_endpoint:
-                  description: "The Fabric REST endpoint URL"
-                  default_value: $brooklyn:formatString("%s", $brooklyn:config("hyperledger.root.node.address"))
-                name:
-                  description: "The chaincode container name (hash)"
-                  defaultValue: "ROOT_NODE_URL_HERE"
-                party_a:
-                  description: "The name of the withdrawing party"
-                  defaultValue: "a"
-                party_b:
-                  description: "The name of the depositing party"
-                  defaultValue: "b"
-                amount:
-                  description: "The amount of value to transfer"
-                  defaultValue: "100"
-
-          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-            brooklyn.config:
-              name: Query Chaincode
-              description: Queries an example chaincode
-
-              command: |
-                timestamp=$(date +%s)
-
-                curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/query-template.json
-                sed -i "s/NAME/${name}/g" body-${timestamp}.json
-                sed -i "s/PARTY/${party}/g" body-${timestamp}.json
-                sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
-
-                curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
-
-              parameters:
-                rest_endpoint:
-                  description: "The Fabric REST endpoint URL"
-                  default_value: "ROOT_NODE_URL_HERE"
-                name:
-                  description: "The chaincode container name (hash)"
-                  defaultValue: "NAME_HERE"
-                party:
-                  description: "The name of the party whose balance to query"
-                  defaultValue: "a"
 
       memberSpec:
         $brooklyn:entitySpec:
-          type: hyperledger-node
+          type: hyperledger-peer-node
           name: Hyperledger Peer Node
 
           brooklyn.config:
-            is.root.node: false
             hyperledger.peer.id: $brooklyn:formatString("vp%s", $brooklyn:config("cluster.member.id"))
             hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
-            hyperledger.root.node.address: $brooklyn:component("first-hyperledger-node").attributeWhenReady("host.address")
+            hyperledger.root.node.address: $brooklyn:component("root-node").attributeWhenReady("host.address")
 
-            launch.latch: $brooklyn:component("first-hyperledger-node").attributeWhenReady("service.isUp")
+            launch.latch: $brooklyn:component("root-node").attributeWhenReady("service.isUp")
 
       brooklyn.enrichers:
       - type: org.apache.brooklyn.enricher.stock.Aggregator
