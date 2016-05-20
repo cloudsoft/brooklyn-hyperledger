@@ -44,6 +44,8 @@ brooklyn.catalog:
 
       provisioning.properties:
         osFamily: centos
+        minRam: 4gb
+        installDevUrandom: true
 
       childStartMode: foreground_late
 
@@ -130,8 +132,6 @@ brooklyn.catalog:
 
       brooklyn.config:
         initialSize: 4
-        minRam: 4gb
-        installDevUrandom: true
 
       firstMemberSpec:
         $brooklyn:entitySpec:
