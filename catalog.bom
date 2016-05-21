@@ -23,9 +23,6 @@ brooklyn.catalog:
         sudo yum -y install docker-engine
 
       post.install.command: |
-        #Disable firewall
-        sudo systemctl disable firewalld
-
         # Configure Docker
         sudo mkdir /etc/systemd/system/docker.service.d
         echo "[Service]" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
