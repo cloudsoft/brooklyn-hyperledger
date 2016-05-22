@@ -61,6 +61,8 @@ brooklyn.catalog:
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
 
       launch.command:  |
+        echo $HOST_ADDRESS > host-address
+
         sudo docker pull mikezaccardo/hyperledger:latest
         sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
         sudo docker pull mikezaccardo/hyperledger-peer:latest
@@ -96,6 +98,7 @@ brooklyn.catalog:
 
           command: |
             timestamp=$(date +%s)
+            rest_endpoint=http://$(cat host-address):5000/chaincode
 
             curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/deploy-template.json
             sed -i "s/PARTY_A/${party_a}/g" body-${timestamp}.json
@@ -104,12 +107,9 @@ brooklyn.catalog:
             sed -i "s/AMOUNT_B/${amount_b}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
-            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
+            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
 
           parameters:
-            rest_endpoint:
-              description: "The Fabric REST endpoint URL"
-              default_value: "ROOT_NODE_URL_HERE"
             party_a:
               description: "The name of the first party"
               defaultValue: "a"
@@ -130,6 +130,7 @@ brooklyn.catalog:
 
           command: |
             timestamp=$(date +%s)
+            rest_endpoint=http://$(cat host-address):5000/chaincode
 
             curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/invoke-template.json
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
@@ -138,12 +139,9 @@ brooklyn.catalog:
             sed -i "s/AMOUNT/${amount}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
-            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
+            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
 
           parameters:
-            rest_endpoint:
-              description: "The Fabric REST endpoint URL"
-              default_value: "ROOT_NODE_URL_HERE"
             name:
               description: "The chaincode container name (hash)"
               defaultValue: "NAME_HERE"
@@ -164,18 +162,16 @@ brooklyn.catalog:
 
           command: |
             timestamp=$(date +%s)
+            rest_endpoint=http://$(cat host-address):5000/chaincode
 
             curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/query-template.json
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
             sed -i "s/PARTY/${party}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
-            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json http://${rest_endpoint}:5000/chaincode
+            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
 
           parameters:
-            rest_endpoint:
-              description: "The Fabric REST endpoint URL"
-              default_value: "ROOT_NODE_URL_HERE"
             name:
               description: "The chaincode container name (hash)"
               defaultValue: "NAME_HERE"
