@@ -249,6 +249,8 @@ brooklyn.catalog:
         name: Hyperledger Peer Node
 
   - id: hyperledger-cluster
+    description: Hyperledger Fabric Validating Nodes Cluster
+    itemType: template
     name: Hyperledger Fabric Validating Nodes
     item:
       type: org.apache.brooklyn.entity.group.DynamicCluster
