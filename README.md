@@ -75,6 +75,11 @@ Windows:
 cd brooklyn-client-cli/windows.386
 ```
 
+Clone this repo in situ to simplify CLI command paths:
+```
+git clone https://github.com/cloudsoft/brooklyn-hyperledger
+```
+
 Log into the Brooklyn server:
 ```
 ./br login http://localhost:8081 <your-username> <your-password>
@@ -82,7 +87,7 @@ Log into the Brooklyn server:
 
 Add [catalog.bom](catalog.bom) to the Brooklyn catalog:
 ```
-./br add-catalog /path/to/catalog.bom
+./br add-catalog brooklyn-hyperledger/catalog.bom
 ```
 
 ### Deploy a Hyperledger Cluster
@@ -92,7 +97,7 @@ with the "Location ID" you created above.
 
 Trigger a Hyperledger cluster deployment:
 ```
-./br deploy /path/to/hyperledger-cluster.yaml
+./br deploy brooklyn-hyperledger/hyperledger-cluster.yaml
 ```
 
 ### Monitor & Use Your Cluster
