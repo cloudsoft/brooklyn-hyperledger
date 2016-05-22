@@ -8,7 +8,7 @@ and member services are both on the short-term roadmap.
 
 ## Instructions
 
-You can skip Step 1 if you already have Cloudsoft AMP
+You can skip Step 1 if you already have Cloudsoft AMP.
 
 ### Step 1: Get Cloudsoft AMP
 
@@ -25,7 +25,7 @@ vagrant up amp
 
 If this is successful Cloudsoft AMP will be available at: [http://10.10.10.100:8081/](http://10.10.10.100:8081/)
 
-Note: These steps assume you already have Virtualbox and Vagrant installed on your local machine and have external network access to the Ubuntu update repositories and the Cloudsoft Artifactory.
+Note: These steps assume you already have Virtualbox and Vagrant installed on your local machine and have external network access to the Ubuntu update repositories and the Cloudsoft Artifactory server.
 
 ### Step 2: Create a Deployment Location
 
@@ -37,16 +37,16 @@ Note: These steps assume you already have Virtualbox and Vagrant installed on yo
 
 Be sure to make note of the "Location ID" that you choose during the final step.
 
-For more information about Brooklyn locations, see [this guide](https://brooklyn.apache.org/v/latest/ops/locations/).
+For more information about AMP locations, see [this guide](https://brooklyn.apache.org/v/latest/ops/locations/).
 
-### Step 3: Add Hyperledger to the Brooklyn Catalog
+### Step 3: Add Hyperledger to the AMP Catalog
 
 * Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
 * Click the "Catalog" tab
 * Click the circle with a plus sign inside it (next to "Catalog" on the left)
 * Click "YAML" under "Add to Catalog"
 * This take you to the Blueprint Composer which should be set to "Catalog" by default
-* Cut and paste [catalog.bom](catalog.bom)
+* Copy and paste [catalog.bom](catalog.bom)
 * Click "Add to Catalog" button
 
 ### Step 4: Deploy a Hyperledger Cluster
@@ -57,13 +57,13 @@ Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (th
 * Click "YAML" under "Add to Catalog"
 * This take you to the Blueprint Composer which should be set to "Catalog" by default
 * Select "Application"
-* Cut and paste [hyperledger-cluster.yaml](hyperledger-cluster.yaml) and replace `<your-location>`
+* Copy and paste [hyperledger-cluster.yaml](hyperledger-cluster.yaml) and replace `<your-location>`
 with the "Location ID" you created above
 * Click "Deploy" button
 
 ## Monitor & Use Your Cluster
 
-To monitor the deployment status of your cluster, go back to the Brooklyn GUI in your
+To monitor the deployment status of your cluster, go back to the AMP Console in your
 browser and click the "Applications" tab.
 
 When the cluster has been successfully deployed, explore all of the nodes in the list
