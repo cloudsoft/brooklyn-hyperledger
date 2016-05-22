@@ -8,41 +8,28 @@ and member services are both on the short-term roadmap.
 
 ## Instructions
 
-### Download, Configure, and Run Apache Brooklyn
+You can skip Step 1 if you already have Cloudsoft AMP.
 
-First, ensure that you have Java installed.
+### Step 1: Get Cloudsoft AMP
 
-Download the release tarball:
+First, register to ensure that you receive regular updates:
 ```
-curl -O https://dist.apache.org/repos/dist/release/brooklyn/apache-brooklyn-0.9.0/apache-brooklyn-0.9.0-bin.tar.gz
+http://www.cloudsoft.io/get-started/
 ```
-
-Extract the tarball:
+Then follow the online instructions (reproduced here for simplicity):
 ```
-tar zxf apache-brooklyn-0.9.0-bin.tar.gz
-```
-
-Create a Brooklyn properties file with your desired login credentials:
-```
-mkdir -p ~/.brooklyn
-
-echo "brooklyn.webconsole.security.users=<your-username>" >> ~/.brooklyn/brooklyn.properties
-
-echo "brooklyn.webconsole.security.user.<your-username>.password=<your-password>" >> ~/.brooklyn/brooklyn.properties
-
-chmod 600 ~/.brooklyn/brooklyn.properties
+git clone https://github.com/cloudsoft/amp-vagrant
+cd amp-vagrant
+vagrant up amp
 ```
 
-Launch Brooklyn (will run in the background):
-```
-cd apache-brooklyn-0.9.0-bin/bin/
+If this is successful Cloudsoft AMP will be available at: [http://10.10.10.100:8081/](http://10.10.10.100:8081/)
 
-nohup ./brooklyn launch > /dev/null 2>&1&
-```
+Note: These steps assume you already have Virtualbox and Vagrant installed on your local machine and have external network access to the Ubuntu update repositories and the Cloudsoft Artifactory server.
 
-### Create a Deployment Location
+### Step 2: Create a Deployment Location
 
-* Go to [http://localhost:8081](http://localhost:8081) in your browser (the Brooklyn GUI)
+* Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
 * Click the "Catalog" tab
 * Click the circle with a plus sign inside it (next to "Catalog" on the left)
 * Click "Location" under "Add to Catalog"
@@ -50,59 +37,33 @@ nohup ./brooklyn launch > /dev/null 2>&1&
 
 Be sure to make note of the "Location ID" that you choose during the final step.
 
-For more information about Brooklyn locations, see [this guide](https://brooklyn.apache.org/v/latest/ops/locations/).
+For more information about AMP locations, see [this guide](https://brooklyn.apache.org/v/latest/ops/locations/).
 
-### Add Hyperledger to the Brooklyn Catalog
+### Step 3: Add Hyperledger to the AMP Catalog
 
-To accomplish this, we will use the Brooklyn Client CLI.
-For more information about the Client CLI, see [this guide](https://brooklyn.apache.org/v/latest/ops/cli/index.html).
+* Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
+* Click the "Catalog" tab
+* Click the circle with a plus sign inside it (next to "Catalog" on the left)
+* Click "YAML" under "Add to Catalog"
+* This take you to the Blueprint Composer which should be set to "Catalog" by default
+* Copy and paste [catalog.bom](catalog.bom)
+* Click "Add to Catalog" button
 
-Navigate to the CLI folder from the terminal session above with one of the following
-commands (depending on your OS):
+### Step 4: Deploy a Hyperledger Cluster
 
-Mac:
-```
-cd brooklyn-client-cli/darwin.amd64
-```
+Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
+* Click the "Catalog" tab
+* Click the circle with a plus sign inside it (next to "Catalog" on the left)
+* Click "YAML" under "Add to Catalog"
+* This take you to the Blueprint Composer which should be set to "Catalog" by default
+* Select "Application"
+* Copy and paste [hyperledger-cluster.yaml](hyperledger-cluster.yaml) and replace `<your-location>`
+with the "Location ID" you created above
+* Click "Deploy" button
 
-Linux:
-```
-cd brooklyn-client-cli/linux.386
-```
+## Monitor & Use Your Cluster
 
-Windows:
-```
-cd brooklyn-client-cli/windows.386
-```
-
-Clone this repo in situ to simplify CLI command paths:
-```
-git clone https://github.com/cloudsoft/brooklyn-hyperledger
-```
-
-Log into the Brooklyn server:
-```
-./br login http://localhost:8081 <your-username> <your-password>
-```
-
-Add [catalog.bom](catalog.bom) to the Brooklyn catalog:
-```
-./br add-catalog brooklyn-hyperledger/catalog.bom
-```
-
-### Deploy a Hyperledger Cluster
-
-Edit [hyperledger-cluster.yaml](hyperledger-cluster.yaml) and replace `<your-location>`
-with the "Location ID" you created above.
-
-Trigger a Hyperledger cluster deployment:
-```
-./br deploy brooklyn-hyperledger/hyperledger-cluster.yaml
-```
-
-### Monitor & Use Your Cluster
-
-To monitor the deployment status of your cluster, go back to the Brooklyn GUI in your
+To monitor the deployment status of your cluster, go back to the AMP Console in your
 browser and click the "Applications" tab.
 
 When the cluster has been successfully deployed, explore all of the nodes in the list
