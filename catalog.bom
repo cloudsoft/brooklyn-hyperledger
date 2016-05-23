@@ -125,7 +125,7 @@ brooklyn.catalog:
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
             curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/deploy-template.json
-            sed -i "s/CHAINCODE/${chaincode}/g" body-${timestamp}.json
+            sed -i "s|CHAINCODE|${chaincode}|g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
             sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
@@ -152,7 +152,7 @@ brooklyn.catalog:
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/chaincode-name-effector-template.json
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/invoke-query-template.json
             sed -i "s/METHOD/invoke/g" body-${timestamp}.json
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
@@ -164,7 +164,6 @@ brooklyn.catalog:
           parameters:
             name:
               description: "The chaincode container name (hash)"
-              defaultValue: "NAME_HERE"
 
             function:
               description: "The function to run"
@@ -182,7 +181,7 @@ brooklyn.catalog:
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/chaincode-name-effector-template.json
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/invoke-query-template.json
             sed -i "s/METHOD/query/g" body-${timestamp}.json
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
@@ -194,11 +193,10 @@ brooklyn.catalog:
           parameters:
             name:
               description: "The chaincode container name (hash)"
-              defaultValue: "NAME_HERE"
 
             function:
               description: "The function to run"
-              defaultValue: "invoke"
+              defaultValue: "query"
 
             args:
               description: "Arguments for the function"
