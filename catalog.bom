@@ -46,8 +46,9 @@ brooklyn.catalog:
 
       childStartMode: foreground_late
 
-  - id: hyperledger-root
+  - id: hyperledger-root-container
     description: A Hyperledger Fabric root node running in a Docker container
+    name: Hyperledger Fabric Root Node Container
     itemType: entity
     item:
 
@@ -179,8 +180,9 @@ brooklyn.catalog:
               description: "The name of the party whose balance to query"
               defaultValue: "a"
 
-  - id: hyperledger-peer
+  - id: hyperledger-peer-container
     description: A Hyperledger Fabric peer node running in a Docker container
+    name: Hyperledger Fabric Peer Node Container
     itemType: entity
     item:
 
@@ -222,8 +224,9 @@ brooklyn.catalog:
         # TODO actually query peer's status using `peer status` in container
         sudo docker inspect -f {{.State.Running}} $HYPERLEDGER_PEER_ID
 
-  - id: hyperledger-root-node
+  - id: hyperledger-root-host
     description: A Docker host running a Hyperledger Fabric root node in a Docker container
+    name: Hyperledger Fabric Root Node Host
     itemType: entity
     item:
 
@@ -231,12 +234,13 @@ brooklyn.catalog:
       type: docker-engine
 
       brooklyn.children:
-      - type: hyperledger-root
-        id: my-hyperledger-root
-        name: Hyperledger Root Node
+      - type: hyperledger-root-container
+        id: my-hyperledger-root-container
+        name: Hyperledger Root Docker Container
 
-  - id: hyperledger-peer-node
+  - id: hyperledger-peer-host
     description: A Docker host running a Hyperledger Fabric peer node in a Docker container
+    name: Hyperledger Fabric Root Node Host
     itemType: entity
     item:
 
@@ -244,12 +248,14 @@ brooklyn.catalog:
       type: docker-engine
 
       brooklyn.children:
-      - type: hyperledger-peer
-        id: my-hyperledger-peer
-        name: Hyperledger Peer Node
+      - type: hyperledger-peer-container
+        id: my-hyperledger-peer-container
+        name: Hyperledger Peer Docker Container
 
   - id: hyperledger-cluster
-    name: Hyperledger Fabric Validating Nodes
+    description: A cluster of Hyperledger Fabric validating peers
+    name: Hyperledger Fabric Cluster
+    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     item:
       type: org.apache.brooklyn.entity.group.DynamicCluster
 
@@ -259,8 +265,7 @@ brooklyn.catalog:
       firstMemberSpec:
         $brooklyn:entitySpec:
           id: root-node
-          type: hyperledger-root-node
-          name: Hyperledger Root Node
+          type: hyperledger-root-host
 
           brooklyn.config:
             hyperledger.peer.id: vp0
@@ -268,8 +273,7 @@ brooklyn.catalog:
 
       memberSpec:
         $brooklyn:entitySpec:
-          type: hyperledger-peer-node
-          name: Hyperledger Peer Node
+          type: hyperledger-peer-host
 
           brooklyn.config:
             hyperledger.peer.id: $brooklyn:formatString("vp%s", $brooklyn:config("cluster.member.id"))
@@ -286,3 +290,13 @@ brooklyn.catalog:
           enricher.aggregating.fromMembers: true
           enricher.sourceSensor: $brooklyn:sensor("host.address")
           enricher.targetSensor: $brooklyn:sensor("node.host.address.list")
+
+  - id: hyperledger-fabric-cluster
+    description: A cluster of Hyperledger Fabric validating peers
+    name: Hyperledger Fabric Cluster
+    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+    itemType: template
+    item:
+      services:
+      - type: hyperledger-cluster
+        name: Hyperledger Fabric Cluster
