@@ -215,7 +215,7 @@ brooklyn.catalog:
 
   - id: hyperledger-cluster
     description: A cluster of Hyperledger Fabric validating peer nodes
-    name: HL Fabric Validating Peer Cluster
+    name: Hyperledger Fabric Cluster
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     item:
       type: org.apache.brooklyn.entity.group.DynamicCluster
@@ -261,10 +261,10 @@ brooklyn.catalog:
 
   - id: hyperledger-fabric-cluster
     description: A cluster of Hyperledger Fabric validating peer nodes
-    name: HL Fabric Validating Peer Cluster
+    name: Hyperledger Fabric Cluster
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: template
     item:
       services:
       - type: hyperledger-cluster
-        name: HL Fabric Validating Peer Cluster
+        name: Hyperledger Fabric Cluster
