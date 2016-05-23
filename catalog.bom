@@ -46,18 +46,20 @@ brooklyn.catalog:
 
       childStartMode: foreground_late
 
-  - id: hyperledger-root-container
-    description: A Hyperledger Fabric root node running in a Docker container
-    name: Hyperledger Fabric Root Node Container
+  - id: hyperledger-validating-peer-node
+    description: A Hyperledger Fabric validating peer node
     itemType: entity
     item:
 
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: Hyperledger Root Docker Container
+      name: Validating Peer Node
 
       shell.env:
+        IS_ROOT_NODE: $brooklyn:config("is.root.node")
+
         HYPERLEDGER_PEER_ID: $brooklyn:config("hyperledger.peer.id")
         HYPERLEDGER_CLUSTER_SIZE: $brooklyn:config("hyperledger.cluster.size")
+        HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:config("hyperledger.root.node.address")
 
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
 
@@ -70,22 +72,43 @@ brooklyn.catalog:
         sudo docker pull mikezaccardo/hyperledger-peer:noops
         sudo docker pull mikezaccardo/hyperledger-peer:pbft
 
-        nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
-            --restart=unless-stopped \
-            -i \
-            -p 5000:5000 \
-            -p 30303:30303 \
-            -p 30304:30304 \
-            -p 31315:31315 \
-            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-            -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
-            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
-            -e CORE_PEER_ADDRESSAUTODETECT=false \
-            -e CORE_PEER_NETWORKID=dev \
-            -e CORE_LOGGING_LEVEL=debug \
-            -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
-            -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
-            mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+        if [ $IS_ROOT_NODE == "true" ]
+        then
+            nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
+                --restart=unless-stopped \
+                -i \
+                -p 5000:5000 \
+                -p 30303:30303 \
+                -p 30304:30304 \
+                -p 31315:31315 \
+                -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
+                -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
+                -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
+                -e CORE_PEER_ADDRESSAUTODETECT=false \
+                -e CORE_PEER_NETWORKID=dev \
+                -e CORE_LOGGING_LEVEL=debug \
+                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
+                -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
+                mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+        else
+            nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
+                --restart=unless-stopped \
+                -i \
+                -p 5000:5000 \
+                -p 30303:30303 \
+                -p 30304:30304 \
+                -p 31315:31315 \
+                -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
+                -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
+                -e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:30303 \
+                -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
+                -e CORE_PEER_ADDRESSAUTODETECT=false \
+                -e CORE_PEER_NETWORKID=dev \
+                -e CORE_LOGGING_LEVEL=debug \
+                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
+                -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
+                mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+        fi
 
       checkRunning.command: |
         # TODO actually query peer's status using `peer status` in container
@@ -180,81 +203,21 @@ brooklyn.catalog:
               description: "The name of the party whose balance to query"
               defaultValue: "a"
 
-  - id: hyperledger-peer-container
-    description: A Hyperledger Fabric peer node running in a Docker container
-    name: Hyperledger Fabric Peer Node Container
+  - id: hyperledger-validating-peer-host
+    description: A Docker host running a Hyperledger Fabric validating peer node in a container
     itemType: entity
     item:
 
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: Hyperledger Peer Docker Container
-
-      shell.env:
-        HYPERLEDGER_PEER_ID: $brooklyn:config("hyperledger.peer.id")
-        HYPERLEDGER_CLUSTER_SIZE: $brooklyn:config("hyperledger.cluster.size")
-        HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:config("hyperledger.root.node.address")
-
-        HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
-
-      launch.command:  |
-        sudo docker pull mikezaccardo/hyperledger:latest
-        sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
-        sudo docker pull mikezaccardo/hyperledger-peer:latest
-        sudo docker pull mikezaccardo/hyperledger-peer:noops
-        sudo docker pull mikezaccardo/hyperledger-peer:pbft
-
-        nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
-            --restart=unless-stopped \
-            -i \
-            -p 30303:30303 \
-            -p 30304:30304 \
-            -p 31315:31315 \
-            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-            -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
-            -e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:30303 \
-            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
-            -e CORE_PEER_ADDRESSAUTODETECT=false \
-            -e CORE_PEER_NETWORKID=dev \
-            -e CORE_LOGGING_LEVEL=debug \
-            -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
-            -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
-            mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
-
-      checkRunning.command: |
-        # TODO actually query peer's status using `peer status` in container
-        sudo docker inspect -f {{.State.Running}} $HYPERLEDGER_PEER_ID
-
-  - id: hyperledger-root-host
-    description: A Docker host running a Hyperledger Fabric root node in a Docker container
-    name: Hyperledger Fabric Root Node Host
-    itemType: entity
-    item:
-
-      name: Hyperledger Root Docker Host
+      name: Validating Peer Docker Host
       type: docker-engine
 
       brooklyn.children:
-      - type: hyperledger-root-container
-        id: my-hyperledger-root-container
-        name: Hyperledger Root Docker Container
-
-  - id: hyperledger-peer-host
-    description: A Docker host running a Hyperledger Fabric peer node in a Docker container
-    name: Hyperledger Fabric Root Node Host
-    itemType: entity
-    item:
-
-      name: Hyperledger Peer Docker Host
-      type: docker-engine
-
-      brooklyn.children:
-      - type: hyperledger-peer-container
-        id: my-hyperledger-peer-container
-        name: Hyperledger Peer Docker Container
+      - type: hyperledger-validating-peer-node
+        id: my-hyperledger-validating-peer-node
 
   - id: hyperledger-cluster
-    description: A cluster of Hyperledger Fabric validating peers
-    name: Hyperledger Fabric Cluster
+    description: A cluster of Hyperledger Fabric validating peer nodes
+    name: HL Fabric Validating Peer Cluster
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     item:
       type: org.apache.brooklyn.entity.group.DynamicCluster
@@ -265,17 +228,24 @@ brooklyn.catalog:
       firstMemberSpec:
         $brooklyn:entitySpec:
           id: root-node
-          type: hyperledger-root-host
+          type: hyperledger-validating-peer-host
+          name: Validating Peer Docker Host (root)
 
           brooklyn.config:
+            is.root.node: true
+
             hyperledger.peer.id: vp0
             hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
+            hyperledger.root.node.address: $brooklyn:component("root-node").attributeWhenReady("host.address")
 
       memberSpec:
         $brooklyn:entitySpec:
-          type: hyperledger-peer-host
+          type: hyperledger-validating-peer-host
+          name: Validating Peer Docker Host
 
           brooklyn.config:
+            is.root.node: false
+
             hyperledger.peer.id: $brooklyn:formatString("vp%s", $brooklyn:config("cluster.member.id"))
             hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
             hyperledger.root.node.address: $brooklyn:component("root-node").attributeWhenReady("host.address")
@@ -292,11 +262,11 @@ brooklyn.catalog:
           enricher.targetSensor: $brooklyn:sensor("node.host.address.list")
 
   - id: hyperledger-fabric-cluster
-    description: A cluster of Hyperledger Fabric validating peers
-    name: Hyperledger Fabric Cluster
+    description: A cluster of Hyperledger Fabric validating peer nodes
+    name: HL Fabric Validating Peer Cluster
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: template
     item:
       services:
       - type: hyperledger-cluster
-        name: Hyperledger Fabric Cluster
+        name: HL Fabric Validating Peer Cluster
