@@ -125,27 +125,23 @@ brooklyn.catalog:
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
             curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/deploy-template.json
-            sed -i "s/PARTY_A/${party_a}/g" body-${timestamp}.json
-            sed -i "s/PARTY_B/${party_b}/g" body-${timestamp}.json
-            sed -i "s/AMOUNT_A/${amount_a}/g" body-${timestamp}.json
-            sed -i "s/AMOUNT_B/${amount_b}/g" body-${timestamp}.json
+            sed -i "s/CHAINCODE/${chaincode}/g" body-${timestamp}.json
+            sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
+            sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
             curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
 
           parameters:
-            party_a:
-              description: "The name of the first party"
-              defaultValue: "a"
-            party_b:
-              description: "The name of the second party"
-              defaultValue: "b"
-            amount_a:
-              description: "The amount of value that the first party starts with"
-              defaultValue: "1000"
-            amount_b:
-              description: "The amount of value that the second party starts with"
-              defaultValue: "2000"
+            chaincode:
+              description: "The chaincode to be deployed"
+
+            function:
+              description: "The function to run"
+              defaultValue: "init"
+
+            args:
+              description: "Arguments for the function"
 
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
@@ -156,11 +152,11 @@ brooklyn.catalog:
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/invoke-template.json
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/chaincode-name-effector-template.json
+            sed -i "s/METHOD/invoke/g" body-${timestamp}.json
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
-            sed -i "s/PARTY_A/${party_a}/g" body-${timestamp}.json
-            sed -i "s/PARTY_B/${party_b}/g" body-${timestamp}.json
-            sed -i "s/AMOUNT/${amount}/g" body-${timestamp}.json
+            sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
+            sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
             curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
@@ -169,15 +165,13 @@ brooklyn.catalog:
             name:
               description: "The chaincode container name (hash)"
               defaultValue: "NAME_HERE"
-            party_a:
-              description: "The name of the withdrawing party"
-              defaultValue: "a"
-            party_b:
-              description: "The name of the depositing party"
-              defaultValue: "b"
-            amount:
-              description: "The amount of value to transfer"
-              defaultValue: "100"
+
+            function:
+              description: "The function to run"
+              defaultValue: "invoke"
+
+            args:
+              description: "Arguments for the function"
 
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
@@ -188,9 +182,11 @@ brooklyn.catalog:
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/query-template.json
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/chaincode-name-effector-template.json
+            sed -i "s/METHOD/query/g" body-${timestamp}.json
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
-            sed -i "s/PARTY/${party}/g" body-${timestamp}.json
+            sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
+            sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
             curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
@@ -199,9 +195,13 @@ brooklyn.catalog:
             name:
               description: "The chaincode container name (hash)"
               defaultValue: "NAME_HERE"
-            party:
-              description: "The name of the party whose balance to query"
-              defaultValue: "a"
+
+            function:
+              description: "The function to run"
+              defaultValue: "invoke"
+
+            args:
+              description: "Arguments for the function"
 
   - id: hyperledger-validating-peer-host
     description: A Docker host running a Hyperledger Fabric validating peer node in a container
