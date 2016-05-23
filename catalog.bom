@@ -72,47 +72,28 @@ brooklyn.catalog:
         sudo docker pull mikezaccardo/hyperledger-peer:noops
         sudo docker pull mikezaccardo/hyperledger-peer:pbft
 
-        if [ $IS_ROOT_NODE == "true" ]
-        then
-            nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
-                --restart=unless-stopped \
-                -i \
-                -p 5000:5000 \
-                -p 30303:30303 \
-                -p 30304:30304 \
-                -p 31315:31315 \
-                -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-                -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
-                -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
-                -e CORE_PEER_ADDRESSAUTODETECT=false \
-                -e CORE_PEER_NETWORKID=dev \
-                -e CORE_LOGGING_LEVEL=debug \
-                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
-                -e CORE_PBFT_GENERAL_MODE=classic \
-                -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
-                -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
-                mikezaccardo/hyperledger-peer:pbft peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
-        else
-            nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
-                --restart=unless-stopped \
-                -i \
-                -p 5000:5000 \
-                -p 30303:30303 \
-                -p 30304:30304 \
-                -p 31315:31315 \
-                -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-                -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
-                -e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:30303 \
-                -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
-                -e CORE_PEER_ADDRESSAUTODETECT=false \
-                -e CORE_PEER_NETWORKID=dev \
-                -e CORE_LOGGING_LEVEL=debug \
-                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
-                -e CORE_PBFT_GENERAL_MODE=classic \
-                -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
-                -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
-                mikezaccardo/hyperledger-peer:pbft peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+        # Additional arguments for peer nodes
+        if [ $IS_ROOT_NODE == "false" ]; then
+          EXTRA_ARGS="-e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:30303"
         fi
+
+        nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
+            --restart=unless-stopped \
+            -i \
+            -p 5000:5000 \
+            -p 30303:30303 \
+            -p 30304:30304 \
+            -p 31315:31315 \
+            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
+            -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
+            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
+            -e CORE_PEER_ADDRESSAUTODETECT=false \
+            -e CORE_PEER_NETWORKID=dev \
+            -e CORE_LOGGING_LEVEL=debug \
+            -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
+            -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
+            $EXTRA_ARGS \
+            mikezaccardo/hyperledger-peer:pbft peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
 
       checkRunning.command: |
         # TODO actually query peer's status using `peer status` in container
