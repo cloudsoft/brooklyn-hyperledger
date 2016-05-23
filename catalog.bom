@@ -87,9 +87,11 @@ brooklyn.catalog:
                 -e CORE_PEER_ADDRESSAUTODETECT=false \
                 -e CORE_PEER_NETWORKID=dev \
                 -e CORE_LOGGING_LEVEL=debug \
-                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
-                -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
-                mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
+                -e CORE_PBFT_GENERAL_MODE=classic \
+                -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
+                -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
+                mikezaccardo/hyperledger-peer:pbft peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
         else
             nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
                 --restart=unless-stopped \
@@ -105,9 +107,11 @@ brooklyn.catalog:
                 -e CORE_PEER_ADDRESSAUTODETECT=false \
                 -e CORE_PEER_NETWORKID=dev \
                 -e CORE_LOGGING_LEVEL=debug \
-                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=noops \
-                -e CORE_NOOPS_BLOCK_TIMEOUT=10s \
-                mikezaccardo/hyperledger-peer:noops peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
+                -e CORE_PBFT_GENERAL_MODE=classic \
+                -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
+                -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
+                mikezaccardo/hyperledger-peer:pbft peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
         fi
 
       checkRunning.command: |
