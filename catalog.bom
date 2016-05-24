@@ -43,6 +43,18 @@ brooklyn.catalog:
         osFamily: centos
         minRam: 4gb
         installDevUrandom: true
+        required.ports:
+        # SSH setup
+        - 22
+        # Docker daemon
+        - 4243
+        # Hyperledger peer nodes
+        - 5000
+        - 30303
+        - 30304
+        - 31315
+        # Hyperledger member services node
+        - 50051
 
       childStartMode: foreground_late
 
