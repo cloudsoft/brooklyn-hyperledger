@@ -157,10 +157,11 @@ brooklyn.catalog:
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/deploy-template.json
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/add-membersrvc/chaincode-request-templates/deploy-template-security.json
             sed -i "s|CHAINCODE|${chaincode}|g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
             sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
+            sed -i "s/SECURE_CONTEXT/${secureContext}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
             curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
@@ -176,6 +177,9 @@ brooklyn.catalog:
             args:
               description: "Arguments for the function"
 
+            secureContext:
+              description: "The registered user"
+
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
           name: Invoke Chaincode
@@ -185,11 +189,12 @@ brooklyn.catalog:
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/invoke-query-template.json
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/add-membersrvc/chaincode-request-templates/invoke-query-template-security.json
             sed -i "s/METHOD/invoke/g" body-${timestamp}.json
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
             sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
+            sed -i "s/SECURE_CONTEXT/${secureContext}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
             curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
@@ -205,6 +210,9 @@ brooklyn.catalog:
             args:
               description: "Arguments for the function"
 
+            secureContext:
+              description: "The registered user"
+
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
           name: Query Chaincode
@@ -214,11 +222,12 @@ brooklyn.catalog:
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/invoke-query-template.json
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/add-membersrvc/chaincode-request-templates/invoke-query-template-security.json
             sed -i "s/METHOD/query/g" body-${timestamp}.json
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
             sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
+            sed -i "s/SECURE_CONTEXT/${secureContext}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
             curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
@@ -233,6 +242,9 @@ brooklyn.catalog:
 
             args:
               description: "Arguments for the function"
+
+            secureContext:
+              description: "The registered user"
 
   - id: hyperledger-membersrvc-node
     description: A Hyperledger Fabric membership services node
