@@ -43,6 +43,18 @@ brooklyn.catalog:
         osFamily: centos
         minRam: 4gb
         installDevUrandom: true
+        required.ports:
+        # SSH setup
+        - 22
+        # Docker daemon
+        - 4243
+        # Hyperledger peer nodes
+        - 5000
+        - 30303
+        - 30304
+        - 31315
+        # Hyperledger member services node
+        - 50051
 
       childStartMode: foreground_late
 
@@ -108,7 +120,7 @@ brooklyn.catalog:
                 -e CORE_PBFT_GENERAL_MODE=classic \
                 -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
                 -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
-                mikezaccardo/hyperledger-peer:pbft peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+                mikezaccardo/hyperledger-peer:pbft peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
         else
             nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
                 --restart=unless-stopped \
@@ -134,7 +146,7 @@ brooklyn.catalog:
                 -e CORE_PBFT_GENERAL_MODE=classic \
                 -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
                 -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
-                mikezaccardo/hyperledger-peer:pbft peer node start > ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+                mikezaccardo/hyperledger-peer:pbft peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
         fi
 
       checkRunning.command: |
