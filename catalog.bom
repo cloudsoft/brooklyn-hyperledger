@@ -144,6 +144,41 @@ brooklyn.catalog:
       brooklyn.initializers:
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
+          name: Login User
+          description: Logs in a registered user
+
+          command: |
+            timestamp=$(date +%s)
+            rest_endpoint=http://$(cat host-address):5000/registrar
+
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/add-membersrvc/chaincode-request-templates/login-template.json
+            sed -i "s/ENROLL_ID/${enrollId}/g" body-${timestamp}.json
+            sed -i "s/ENROLL_SECRET/${enrollSecret}/g" body-${timestamp}.json
+
+            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
+
+          parameters:
+            enrollId:
+              description: "The username"
+
+            enrollSecret:
+              description: "The password"
+
+      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+        brooklyn.config:
+          name: Check Login
+          description: Checks if a user is logged in
+
+          command: |
+            rest_endpoint=http://$(cat host-address):5000/registrar/${enrollId}
+            curl ${rest_endpoint}
+
+          parameters:
+            enrollId:
+              description: "The username"
+
+      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+        brooklyn.config:
           name: Deploy Chaincode
           description: Deploys an example chaincode
 
