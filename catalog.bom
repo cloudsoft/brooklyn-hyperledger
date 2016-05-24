@@ -179,6 +179,36 @@ brooklyn.catalog:
 
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
+          name: Get ECert
+          description: Gets enrollment certificate of a user
+
+          command: |
+            rest_endpoint=http://$(cat host-address):5000/registrar/${enrollId}/ecert
+            curl ${rest_endpoint}
+
+          parameters:
+            enrollId:
+              description: "The username"
+
+      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+        brooklyn.config:
+          name: Get TCert
+          description: Gets transaction certificate(s) of a user
+
+          command: |
+            rest_endpoint=http://$(cat host-address):5000/registrar/${enrollId}/tcert?count=${count}
+            curl ${rest_endpoint}
+
+          parameters:
+            enrollId:
+              description: "The username"
+
+            count:
+              description: "The number of returned certificates"
+              defaultValue: "1"
+
+      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+        brooklyn.config:
           name: Deploy Chaincode
           description: Deploys an example chaincode
 
