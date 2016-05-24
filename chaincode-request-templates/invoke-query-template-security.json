@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "method": "METHOD",
+  "params": {
+    "type": 1,
+    "chaincodeID": {
+      "name": "NAME"
+    },
+    "ctorMsg": {
+      "function": "FUNCTION",
+      "args": ARGUMENTS
+    },
+    "secureContext": "SECURE_CONTEXT"
+  },
+  "id": TRANSACTION_ID
+}
