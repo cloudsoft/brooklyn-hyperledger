@@ -60,12 +60,20 @@ brooklyn.catalog:
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
       name: Validating Peer Node
 
+      brooklyn.config:
+        secret.keys: "MwYpmSRjupbT;5wgHK9qqYaPy;vQelbRvja7cJ;9LKqKH5peurL"
+
       shell.env:
         IS_ROOT_NODE: $brooklyn:config("is.root.node")
+
+        CLUSTER_INDEX: $brooklyn:config("cluster.index")
 
         HYPERLEDGER_PEER_ID: $brooklyn:config("hyperledger.peer.id")
         HYPERLEDGER_CLUSTER_SIZE: $brooklyn:config("hyperledger.cluster.size")
         HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:config("hyperledger.root.node.address")
+        HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:config("hyperledger.membersrvc.node.address")
+
+        SECRET_KEYS: $brooklyn:config("secret.keys")
 
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
 
@@ -77,6 +85,9 @@ brooklyn.catalog:
         sudo docker pull mikezaccardo/hyperledger-peer:latest
         sudo docker pull mikezaccardo/hyperledger-peer:noops
         sudo docker pull mikezaccardo/hyperledger-peer:pbft
+
+        IFS=';' read -ra SECRET_KEYS_ARRAY <<< "$SECRET_KEYS"
+        SECRET=${SECRET_KEYS_ARRAY[$CLUSTER_INDEX]}
 
         if [ $IS_ROOT_NODE == "true" ]
         then
@@ -93,6 +104,12 @@ brooklyn.catalog:
                 -e CORE_PEER_ADDRESSAUTODETECT=false \
                 -e CORE_PEER_NETWORKID=dev \
                 -e CORE_LOGGING_LEVEL=debug \
+                -e CORE_SECURITY_ENABLED=true \
+                -e CORE_SECURITY_ENROLLID=test_$HYPERLEDGER_PEER_ID \
+                -e CORE_SECURITY_ENROLLSECRET=$SECRET \
+                -e CORE_PEER_PKI_ECA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
+                -e CORE_PEER_PKI_TCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
+                -e CORE_PEER_PKI_TLSCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
                 -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
                 -e CORE_PBFT_GENERAL_MODE=classic \
                 -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
@@ -113,6 +130,12 @@ brooklyn.catalog:
                 -e CORE_PEER_ADDRESSAUTODETECT=false \
                 -e CORE_PEER_NETWORKID=dev \
                 -e CORE_LOGGING_LEVEL=debug \
+                -e CORE_SECURITY_ENABLED=true \
+                -e CORE_SECURITY_ENROLLID=test_$HYPERLEDGER_PEER_ID \
+                -e CORE_SECURITY_ENROLLSECRET=$SECRET \
+                -e CORE_PEER_PKI_ECA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
+                -e CORE_PEER_PKI_TCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
+                -e CORE_PEER_PKI_TLSCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
                 -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
                 -e CORE_PBFT_GENERAL_MODE=classic \
                 -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
@@ -211,6 +234,29 @@ brooklyn.catalog:
             args:
               description: "Arguments for the function"
 
+  - id: hyperledger-membersrvc-node
+    description: A Hyperledger Fabric membership services node
+    itemType: entity
+    item:
+
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: Membership Services Node
+
+      launch.command:  |
+        sudo docker pull mikezaccardo/hyperledger:latest
+        sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
+        sudo docker pull mikezaccardo/hyperledger-membersrvc:latest
+
+        nohup sudo docker run --name=membersrvc \
+            --restart=unless-stopped \
+            -i \
+            -p 50051:50051 \
+            -e CORE_LOGGING_LEVEL=debug \
+            mikezaccardo/hyperledger-membersrvc:latest membersrvc > ~/membersrvc.log 2>&1&
+
+      checkRunning.command: |
+        sudo docker inspect -f {{.State.Running}} membersrvc
+
   - id: hyperledger-validating-peer-host
     description: A Docker host running a Hyperledger Fabric validating peer node in a container
     itemType: entity
@@ -221,7 +267,18 @@ brooklyn.catalog:
 
       brooklyn.children:
       - type: hyperledger-validating-peer-node
-        id: my-hyperledger-validating-peer-node
+
+  - id: hyperledger-membersrvc-host
+    description: A Docker host running a Hyperledger Fabric Membership services node in a container
+    itemType: entity
+    item:
+
+      name: Membership Services Docker Host
+      type: docker-engine
+
+      brooklyn.children:
+      - type: hyperledger-membersrvc-node
+        id: my-hyperledger-membersrvc-node
 
   - id: hyperledger-cluster
     description: A cluster of Hyperledger Fabric validating peer nodes
@@ -242,9 +299,14 @@ brooklyn.catalog:
           brooklyn.config:
             is.root.node: true
 
+            cluster.index: $brooklyn:config("cluster.member.id")
+
             hyperledger.peer.id: vp0
             hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
             hyperledger.root.node.address: $brooklyn:component("root-node").attributeWhenReady("host.address")
+            hyperledger.membersrvc.node.address: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
+
+            launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
 
       memberSpec:
         $brooklyn:entitySpec:
@@ -254,9 +316,12 @@ brooklyn.catalog:
           brooklyn.config:
             is.root.node: false
 
+            cluster.index: $brooklyn:config("cluster.member.id")
+
             hyperledger.peer.id: $brooklyn:formatString("vp%s", $brooklyn:config("cluster.member.id"))
             hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
             hyperledger.root.node.address: $brooklyn:component("root-node").attributeWhenReady("host.address")
+            hyperledger.membersrvc.node.address: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
 
             launch.latch: $brooklyn:component("root-node").attributeWhenReady("service.isUp")
 
@@ -270,7 +335,7 @@ brooklyn.catalog:
           enricher.targetSensor: $brooklyn:sensor("node.host.address.list")
 
   - id: hyperledger-fabric-cluster
-    description: A cluster of Hyperledger Fabric validating peer nodes
+    description: A Hyperledger Fabric cluster of validating peer nodes and a membership services node
     name: Hyperledger Fabric Cluster
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: template
@@ -278,3 +343,6 @@ brooklyn.catalog:
       services:
       - type: hyperledger-cluster
         name: Hyperledger Fabric Cluster
+
+      - type: hyperledger-membersrvc-host
+        name: Membership Services Host
