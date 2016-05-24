@@ -99,6 +99,7 @@ brooklyn.catalog:
                 -e CORE_PEER_NETWORKID=dev \
                 -e CORE_LOGGING_LEVEL=debug \
                 -e CORE_SECURITY_ENABLED=true \
+                -e CORE_SECURITY_PRIVACY=true \
                 -e CORE_SECURITY_ENROLLID=test_$HYPERLEDGER_PEER_ID \
                 -e CORE_SECURITY_ENROLLSECRET=$SECRET \
                 -e CORE_PEER_PKI_ECA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
@@ -125,6 +126,7 @@ brooklyn.catalog:
                 -e CORE_PEER_NETWORKID=dev \
                 -e CORE_LOGGING_LEVEL=debug \
                 -e CORE_SECURITY_ENABLED=true \
+                -e CORE_SECURITY_PRIVACY=true \
                 -e CORE_SECURITY_ENROLLID=test_$HYPERLEDGER_PEER_ID \
                 -e CORE_SECURITY_ENROLLSECRET=$SECRET \
                 -e CORE_PEER_PKI_ECA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
