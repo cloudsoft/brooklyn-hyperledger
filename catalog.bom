@@ -49,6 +49,7 @@ brooklyn.catalog:
         osFamily: centos
         minRam: 4gb
         installDevUrandom: true
+        loginUser: centos
         required.ports:
         # SSH setup
         - 22
@@ -89,73 +90,50 @@ brooklyn.catalog:
 
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
 
-      launch.command:  |
-        echo $HOST_ADDRESS > host-address
-
+      install.command: |
         sudo docker pull mikezaccardo/hyperledger:latest
         sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
         sudo docker pull mikezaccardo/hyperledger-peer:latest
         sudo docker pull mikezaccardo/hyperledger-peer:noops
         sudo docker pull mikezaccardo/hyperledger-peer:pbft
 
+      launch.command: |
+        echo $HOST_ADDRESS > host-address
+
         IFS=';' read -ra SECRET_KEYS_ARRAY <<< "$SECRET_KEYS"
         SECRET=${SECRET_KEYS_ARRAY[$CLUSTER_INDEX]}
 
-        if [ $IS_ROOT_NODE == "true" ]
-        then
-            nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
-                --restart=unless-stopped \
-                -i \
-                -p 5000:5000 \
-                -p 30303:30303 \
-                -p 30304:30304 \
-                -p 31315:31315 \
-                -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-                -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
-                -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
-                -e CORE_PEER_ADDRESSAUTODETECT=false \
-                -e CORE_PEER_NETWORKID=dev \
-                -e CORE_LOGGING_LEVEL=debug \
-                -e CORE_SECURITY_ENABLED=true \
-                -e CORE_SECURITY_PRIVACY=true \
-                -e CORE_SECURITY_ENROLLID=test_$HYPERLEDGER_PEER_ID \
-                -e CORE_SECURITY_ENROLLSECRET=$SECRET \
-                -e CORE_PEER_PKI_ECA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
-                -e CORE_PEER_PKI_TCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
-                -e CORE_PEER_PKI_TLSCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
-                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
-                -e CORE_PBFT_GENERAL_MODE=classic \
-                -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
-                -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
-                mikezaccardo/hyperledger-peer:pbft peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
-        else
-            nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
-                --restart=unless-stopped \
-                -i \
-                -p 5000:5000 \
-                -p 30303:30303 \
-                -p 30304:30304 \
-                -p 31315:31315 \
-                -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-                -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
-                -e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:30303 \
-                -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
-                -e CORE_PEER_ADDRESSAUTODETECT=false \
-                -e CORE_PEER_NETWORKID=dev \
-                -e CORE_LOGGING_LEVEL=debug \
-                -e CORE_SECURITY_ENABLED=true \
-                -e CORE_SECURITY_PRIVACY=true \
-                -e CORE_SECURITY_ENROLLID=test_$HYPERLEDGER_PEER_ID \
-                -e CORE_SECURITY_ENROLLSECRET=$SECRET \
-                -e CORE_PEER_PKI_ECA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
-                -e CORE_PEER_PKI_TCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
-                -e CORE_PEER_PKI_TLSCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
-                -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
-                -e CORE_PBFT_GENERAL_MODE=classic \
-                -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
-                -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
-                mikezaccardo/hyperledger-peer:pbft peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+        # Additional arguments for peer nodes
+        if [ $IS_ROOT_NODE == "false" ]; then
+          PEER_NODE_ARG="-e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:30303"
         fi
+
+        nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
+            --restart=unless-stopped \
+            -i \
+            -p 5000:5000 \
+            -p 30303:30303 \
+            -p 30304:30304 \
+            -p 31315:31315 \
+            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
+            -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
+            $PEER_NODE_ARG \
+            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
+            -e CORE_PEER_ADDRESSAUTODETECT=false \
+            -e CORE_PEER_NETWORKID=dev \
+            -e CORE_LOGGING_LEVEL=debug \
+            -e CORE_SECURITY_ENABLED=true \
+            -e CORE_SECURITY_PRIVACY=true \
+            -e CORE_SECURITY_ENROLLID=test_$HYPERLEDGER_PEER_ID \
+            -e CORE_SECURITY_ENROLLSECRET=$SECRET \
+            -e CORE_PEER_PKI_ECA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
+            -e CORE_PEER_PKI_TCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
+            -e CORE_PEER_PKI_TLSCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
+            -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
+            -e CORE_PBFT_GENERAL_MODE=classic \
+            -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_SIZE \
+            -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
+            mikezaccardo/hyperledger-peer:pbft peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
 
       checkRunning.command: |
         # TODO actually query peer's status using `peer status` in container
@@ -199,109 +177,6 @@ brooklyn.catalog:
 
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
-          name: Get ECert
-          description: Gets enrollment certificate of a user
-
-          command: |
-            rest_endpoint=http://$(cat host-address):5000/registrar/${enrollId}/ecert
-            curl ${rest_endpoint}
-
-          parameters:
-            enrollId:
-              description: "The username"
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: Get TCert
-          description: Gets transaction certificate(s) of a user
-
-          command: |
-            rest_endpoint=http://$(cat host-address):5000/registrar/${enrollId}/tcert?count=${count}
-            curl ${rest_endpoint}
-
-          parameters:
-            enrollId:
-              description: "The username"
-
-            count:
-              description: "The number of returned certificates"
-              defaultValue: "1"
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: Deploy Chaincode
-          description: Deploys an example chaincode
-
-          command: |
-            timestamp=$(date +%s)
-            rest_endpoint=http://$(cat host-address):5000/chaincode
-
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/add-membersrvc/chaincode-request-templates/deploy-template-security.json
-            sed -i "s|CHAINCODE|${chaincode}|g" body-${timestamp}.json
-            sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
-            sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
-            sed -i "s/METADATA/${metadata}/g" body-${timestamp}.json
-            sed -i "s/SECURE_CONTEXT/${secureContext}/g" body-${timestamp}.json
-            sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
-
-            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
-
-          parameters:
-            chaincode:
-              description: "The chaincode to be deployed"
-
-            function:
-              description: "The function to run"
-              defaultValue: "init"
-
-            args:
-              description: "Arguments for the function"
-
-            metadata:
-              description: "Metadata for the deploy call"
-
-            secureContext:
-              description: "The registered user"
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: Invoke Chaincode
-          description: Invokes an example chaincode
-
-          command: |
-            timestamp=$(date +%s)
-            rest_endpoint=http://$(cat host-address):5000/chaincode
-
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/add-membersrvc/chaincode-request-templates/invoke-query-template-security.json
-            sed -i "s/METHOD/invoke/g" body-${timestamp}.json
-            sed -i "s/NAME/${name}/g" body-${timestamp}.json
-            sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
-            sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
-            sed -i "s/METADATA/${metadata}/g" body-${timestamp}.json
-            sed -i "s/SECURE_CONTEXT/${secureContext}/g" body-${timestamp}.json
-            sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
-
-            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
-
-          parameters:
-            name:
-              description: "The chaincode container name (hash)"
-
-            function:
-              description: "The function to run"
-              defaultValue: "invoke"
-
-            args:
-              description: "Arguments for the function"
-
-            metadata:
-              description: "Metadata for the invoke call"
-
-            secureContext:
-              description: "The registered user"
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
           name: Query Chaincode
           description: Queries an example chaincode
 
@@ -309,7 +184,7 @@ brooklyn.catalog:
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/add-membersrvc/chaincode-request-templates/invoke-query-template-security.json
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/add-membersrvc/chaincode-request-templates/query-template-security.json
             sed -i "s/METHOD/query/g" body-${timestamp}.json
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
@@ -330,6 +205,7 @@ brooklyn.catalog:
 
             args:
               description: "Arguments for the function"
+              defaultValue: "[]"
 
             metadata:
               description: "Metadata for the query call"
@@ -345,20 +221,67 @@ brooklyn.catalog:
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
       name: Membership Services Node
 
-      launch.command:  |
+      install.command: |
         sudo docker pull mikezaccardo/hyperledger:latest
         sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
         sudo docker pull mikezaccardo/hyperledger-membersrvc:latest
 
+      launch.command: |
         nohup sudo docker run --name=membersrvc \
             --restart=unless-stopped \
             -i \
             -p 50051:50051 \
             -e CORE_LOGGING_LEVEL=debug \
-            mikezaccardo/hyperledger-membersrvc:latest membersrvc > ~/membersrvc.log 2>&1&
+            mikezaccardo/hyperledger-membersrvc:latest membersrvc >> ~/membersrvc.log 2>&1&
 
       checkRunning.command: |
         sudo docker inspect -f {{.State.Running}} membersrvc
+
+  - id: hyperledger-cli-node
+    description: A Hyperledger Fabric CLI node
+    itemType: entity
+    item:
+
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: CLI Node
+
+      brooklyn.config:
+        launch.latch: $brooklyn:component("root-node").attributeWhenReady("service.isUp")
+
+      shell.env:
+        HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("root-node").attributeWhenReady("host.address")
+        HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
+        HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+
+      install.command: |
+        sudo docker pull mikezaccardo/hyperledger:latest
+        sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
+        sudo docker pull mikezaccardo/hyperledger-peer:latest
+
+      launch.command:  |
+        nohup sudo docker run --name=cli \
+            -i \
+            -p 30303:30303 \
+            -p 30304:30304 \
+            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
+            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
+            -e CORE_PEER_ADDRESSAUTODETECT=false \
+            -e CORE_SECURITY_ENABLED=true \
+            -e CORE_SECURITY_PRIVACY=true \
+            -e HYPERLEDGER_ROOT_NODE_ADDRESS=$HYPERLEDGER_ROOT_NODE_ADDRESS \
+            -e HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS \
+            -e APP_HOME=/go/src/github.com/hyperledger/fabric/examples/chaincode/go/asset_management/app \
+            mikezaccardo/hyperledger-peer:latest /bin/bash -c \
+                "cd /go/src/github.com/hyperledger/fabric/examples/chaincode/go/asset_management/app; \
+                cp /go/bin/core.yaml .; \
+                sed -i \"s/0.0.0.0/$HYPERLEDGER_ROOT_NODE_ADDRESS/g\" core.yaml; \
+                sed -i \"s/localhost/$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS/g\" core.yaml; \
+                curl -so infiniteloop.sh https://raw.githubusercontent.com/hyperledger/fabric/master/scripts/infiniteloop.sh; \
+                chmod +x infiniteloop.sh; \
+                ./infiniteloop.sh" >> ~/cli.log 2>&1&
+
+      checkRunning.command: |
+        sudo docker inspect -f {{.State.Running}} cli
 
   - id: hyperledger-validating-peer-host
     description: A Docker host running a Hyperledger Fabric validating peer node in a container
@@ -371,17 +294,20 @@ brooklyn.catalog:
       brooklyn.children:
       - type: hyperledger-validating-peer-node
 
-  - id: hyperledger-membersrvc-host
-    description: A Docker host running a Hyperledger Fabric Membership services node in a container
+  - id: hyperledger-services-host
+    description: A Docker host running a Hyperledger Fabric Membership Services node and a CLI node in separate containers
     itemType: entity
     item:
 
-      name: Membership Services Docker Host
+      name: Membership Services and CLI Docker Host
       type: docker-engine
 
       brooklyn.children:
       - type: hyperledger-membersrvc-node
         id: my-hyperledger-membersrvc-node
+
+      - type: hyperledger-cli-node
+        id: my-hyperledger-cli-node
 
   - id: hyperledger-cluster
     description: A cluster of Hyperledger Fabric validating peer nodes
@@ -438,7 +364,7 @@ brooklyn.catalog:
           enricher.targetSensor: $brooklyn:sensor("node.host.address.list")
 
   - id: hyperledger-fabric-cluster
-    description: A Hyperledger Fabric cluster of validating peer nodes and a membership services node
+    description: A Hyperledger Fabric cluster of validating peer nodes, a membership services node, and a CLI node
     name: Hyperledger Fabric Cluster
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: template
@@ -447,5 +373,5 @@ brooklyn.catalog:
       - type: hyperledger-cluster
         name: Hyperledger Fabric Cluster
 
-      - type: hyperledger-membersrvc-host
-        name: Membership Services Host
+      - type: hyperledger-services-host
+        name: Membership Services and CLI Host
