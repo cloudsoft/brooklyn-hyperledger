@@ -1,10 +1,7 @@
-# brooklyn-hyperledger
+# Brooklyn Hyperledger
 
 This repository contains [Apache Brooklyn](https://brooklyn.apache.org/) blueprints for a
 [Hyperledger Fabric](https://github.com/hyperledger/fabric) cluster deployment.
-
-Currently the cluster uses the "noops" consensus plugin, but support for the "pbft" plugin
-and member services are both on the short-term roadmap.
 
 
 ## Instructions
@@ -15,15 +12,15 @@ You can skip Step 1 if you have previously installed Cloudsoft AMP.
 ### Step 1: Get Cloudsoft AMP
 
 First, register to ensure that you receive regular updates:
-```
-http://www.cloudsoft.io/get-started/
-```
+
+    http://www.cloudsoft.io/get-started/
+
 Then follow the online instructions (reproduced here for simplicity):
-```
-git clone https://github.com/cloudsoft/amp-vagrant
-cd amp-vagrant
-vagrant up amp
-```
+
+    git clone https://github.com/cloudsoft/amp-vagrant
+    cd amp-vagrant
+    vagrant up amp
+
 
 If this is successful Cloudsoft AMP will be available at: [http://10.10.10.100:8081/](http://10.10.10.100:8081/)
 
@@ -68,7 +65,7 @@ with the "Location ID" you created above
 * Click "Deploy" button
 
 
-## Monitor and Use Your Cluster
+## Using Your Cluster
 
 To monitor the deployment status of your cluster, go back to the AMP Console in your
 browser and click the "Applications" tab.
@@ -76,9 +73,87 @@ browser and click the "Applications" tab.
 When the cluster has been successfully deployed, explore all of the nodes in the list
 under "Applications" on the left.
 
-To test out your cluster, SSH into one of the nodes (using the value of the
-`host.sshAddress` sensor) and follow [these instructions](https://github.com/hyperledger/fabric/blob/master/docs/dev-setup/devnet-setup.md#deploy-invoke-and-query-a-chaincode)
-from the HyperLedger Fabric documentation.
+
+### Operations on the cluster
+
+Hyperledger Fabric exposes the 
+[Open Blockchain REST service](https://github.com/openblockchain/obc-docs/blob/60852a53c3659104130b5809534dc0de03775df9/protocol-spec.md#61-rest-service) 
+endpoints as Apache Brooklyn 
+[effectors](https://brooklyn.apache.org/v/latest/concepts/configuration-sensor-effectors.html#sensors-and-effectors)
+on the peer node 
+[entities](https://brooklyn.apache.org/v/latest/concepts/entities.html).
+
+
+#### User management
+
+Corresponds to the 
+[registrar API](https://github.com/openblockchain/obc-docs/blob/60852a53c3659104130b5809534dc0de03775df9/protocol-spec.md#6215-registrar-api-member-services).
+
+| Name        | API Endpoint                          | Description                                                                                                                                                                                                       |
+|-------------|---------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Check Login | `GET /registrar/{enrollmentID}`       | Confirms whether the given user is registered with the CA.                                                                                                                                                        |
+| Login User  | `POST /registrar`                     | Sign the given user in with the given password.                                                                                                                                                                   |
+| Get TCert   | `GET /registrar/{enrollmentID}/tcert` | Retrieve the [transaction certificates](https://github.com/openblockchain/obc-docs/blob/60852a53c3659104130b5809534dc0de03775df9/protocol-spec.md#42-user-privacy-through-membership-services) of the given user. |
+| Get ECert   | `GET /registrar/{enrollmentID}/ecert` | Retrieve the [enrollment certificate](https://github.com/openblockchain/obc-docs/blob/60852a53c3659104130b5809534dc0de03775df9/protocol-spec.md#42-user-privacy-through-membership-services) of the given user.   |
+
+
+#### Chaincode
+
+Corresponds to the 
+[chaincode API](https://github.com/openblockchain/obc-docs/blob/60852a53c3659104130b5809534dc0de03775df9/protocol-spec.md#6213-chaincode-api).
+
+Use the **Deploy Chaincode** effector to deploy a chaincode on a node's filesystem. Its parameters are:
+
+* _chaincode_ a path to the directory containing the chaincode
+* _function_ the chaincode function to invoke (defaults to `init`)
+* _args_ a list of parameters for the function
+* _secureContext_ the enrollment ID of a logged in user
+
+For example, to deploy Hyperledger Fabric's
+[example02 chaincode](https://github.com/hyperledger/fabric/blob/f7ce5afcfcde3085fa07327203d764888fabb84e/examples/chaincode/go/chaincode_example02/chaincode_example02.go)
+use the effector with:
+
+* _chaincode_ `github.com/hyperledger/fabric/examples/chaincode/go/chaincode_example02`
+* _args_ `["a","100", "b", "200"]`
+* _secureContext_ `lukas`
+
+On successful invocation of the deploy effector Brooklyn will return the name of the newly-started chaincode. 
+Take a note of this.
+
+
+Use the **Invoke Chaincode** effector to execute a function within the chaincode. Its parameters are:
+
+* _name_ the name of the chaincode as returned by the deploy transaction.
+* _function_ the chaincode function to invoke (defaults to `invoke`)
+* _args_ a list of parameters for the function
+* _secureContext_ the enrollment ID of a logged in user
+
+To continue the `example02` example, to move ten units from `Alice` to `Bob`, use the effector with:
+
+* _name_ the chaincode name
+* _function_ `invoke`
+* _args_ `["Alice", "Bob", "10"]`
+* _secureContext_ `lukas`
+
+On successful invocation of this effector Brooklyn will return the output of the command.
+
+
+Lastly, use the **Query Chaincode** effector to query the state of a chaincode. Its parameters are much as 
+the invoke effector:
+
+* _name_ the name of the chaincode as returned by the deploy transaction.
+* _function_ the chaincode function to invoke (defaults to `query`)
+* _args_ a list of parameters for the function
+* _secureContext_ the enrollment ID of a logged in user
+
+For example, to check the value Alice has:
+
+* _name_ the chaincode name
+* _function_ `query`
+* _args_ `["Alice"]`
+* _secureContext_ any user
+
+On successful invocation of this effector Brooklyn will return the output of the command.
 
 
 ## Appendix
