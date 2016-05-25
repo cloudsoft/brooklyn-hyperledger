@@ -240,6 +240,7 @@ brooklyn.catalog:
             sed -i "s|CHAINCODE|${chaincode}|g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
             sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
+            sed -i "s/METADATA/${metadata}/g" body-${timestamp}.json
             sed -i "s/SECURE_CONTEXT/${secureContext}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
@@ -255,6 +256,9 @@ brooklyn.catalog:
 
             args:
               description: "Arguments for the function"
+
+            metadata:
+              description: "Metadata for the deploy call"
 
             secureContext:
               description: "The registered user"
@@ -273,6 +277,7 @@ brooklyn.catalog:
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
             sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
+            sed -i "s/METADATA/${metadata}/g" body-${timestamp}.json
             sed -i "s/SECURE_CONTEXT/${secureContext}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
@@ -288,6 +293,9 @@ brooklyn.catalog:
 
             args:
               description: "Arguments for the function"
+
+            metadata:
+              description: "Metadata for the invoke call"
 
             secureContext:
               description: "The registered user"
@@ -306,6 +314,7 @@ brooklyn.catalog:
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
             sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
+            sed -i "s/METADATA/${metadata}/g" body-${timestamp}.json
             sed -i "s/SECURE_CONTEXT/${secureContext}/g" body-${timestamp}.json
             sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
 
@@ -321,6 +330,9 @@ brooklyn.catalog:
 
             args:
               description: "Arguments for the function"
+
+            metadata:
+              description: "Metadata for the query call"
 
             secureContext:
               description: "The registered user"
