@@ -1,6 +1,12 @@
 brooklyn.catalog:
   version: 0.1.0_SNAPSHOT
 
+  publish:
+    description: |
+      Entities for running the Hyperledger Fabric project in Apache Brooklyn.
+    license_code: Apache-2.0
+    icon_url: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+
   items:
   - id: docker-engine
     description: The engine for running Docker containers
