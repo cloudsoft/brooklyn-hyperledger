@@ -49,7 +49,6 @@ brooklyn.catalog:
         osFamily: centos
         minRam: 4gb
         installDevUrandom: true
-        loginUser: centos
         required.ports:
         # SSH setup
         - 22
