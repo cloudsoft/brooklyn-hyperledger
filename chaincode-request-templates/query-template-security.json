@@ -9,7 +9,9 @@
     "ctorMsg": {
       "function": "FUNCTION",
       "args": ARGUMENTS
-    }
+    },
+    "metadata": "METADATA",
+    "secureContext": "SECURE_CONTEXT"
   },
   "id": TRANSACTION_ID
 }

@@ -1,15 +1,16 @@
 {
   "jsonrpc": "2.0",
-  "method": "deploy",
+  "method": "METHOD",
   "params": {
     "type": 1,
     "chaincodeID": {
-      "path": "CHAINCODE"
+      "name": "NAME"
     },
     "ctorMsg": {
       "function": "FUNCTION",
       "args": ARGUMENTS
-    }
+    },
+    "metadata": "METADATA"
   },
   "id": TRANSACTION_ID
 }
