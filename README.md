@@ -88,7 +88,7 @@ deployment location's configuration.
 Note 2: If `host.sshAddress` ends with a port (e.g. `:22`), remove the colon and the port from the SSH command.
 
 
-### Step 2: Build and Run the Asset Managemnt App
+### Step 2: Build and Run the Asset Management App
 
 From the same terminal window from the previous step, execute the following commands:
 ```
