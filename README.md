@@ -121,4 +121,5 @@ are a good choice. The following is a sample catalogue blueprint for the `us-eas
           region:     us-east-1
           imageId:    us-east-1/ami-6d1c2007
           minRam:     2000
+          loginUser:  centos
           installDevUrandom: true
