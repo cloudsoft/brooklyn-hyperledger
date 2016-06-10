@@ -40,7 +40,7 @@ Note: These steps assume you already have Virtualbox and Vagrant installed on yo
 
 Be sure to make note of the "Location ID" that you choose during the final step.
 
-For more information about AMP locations, see this guide's appendix and
+For more information about AMP locations, see this guide's [appendix](#appendix) and
 [the Apache Brooklyn documentation](https://brooklyn.apache.org/v/latest/ops/locations/).
 
 
