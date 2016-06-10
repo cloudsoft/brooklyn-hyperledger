@@ -123,3 +123,4 @@ are a good choice. The following is a sample catalogue blueprint for the `us-eas
           minRam:     2000
           loginUser:  centos
           installDevUrandom: true
+          allocatePTY: true
