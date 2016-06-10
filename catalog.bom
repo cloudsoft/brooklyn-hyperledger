@@ -1,5 +1,6 @@
 brooklyn.catalog:
-  version: 0.1.0_SNAPSHOT
+  id: brooklyn-hyperledger-fabric
+  version: 0.1.1_SNAPSHOT
 
   publish:
     description: |
@@ -8,6 +9,34 @@ brooklyn.catalog:
     icon_url: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
 
   items:
+
+  - id: hyperledger-fabric-cluster
+    description: A Hyperledger Fabric cluster of validating peer nodes, a membership services node, and a CLI node
+    name: Hyperledger Fabric Cluster
+    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+    itemType: template
+    item:
+      services:
+      - type: hyperledger-fabric-cluster-app
+        id: hyperledger-deployment
+        name: "Hyperledger Cluster"
+      brooklyn.parameters:
+      - name: hyperledger.node.count
+        description: |
+          The number of Hyperledger nodes to create in the cluster.
+        type: integer
+        default: 4
+
+  - id: hyperledger-fabric-cluster-app
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+      brooklyn.children:
+        - type: hyperledger-cluster
+          name: Hyperledger Fabric Cluster
+
+        - type: hyperledger-services-host
+          name: Membership Services and CLI Host
+
   - id: docker-engine
     description: The engine for running Docker containers
     itemType: entity
@@ -316,7 +345,7 @@ brooklyn.catalog:
       type: org.apache.brooklyn.entity.group.DynamicCluster
 
       brooklyn.config:
-        initialSize: 4
+        initialSize: $brooklyn:config("hyperledger.node.count")
 
       firstMemberSpec:
         $brooklyn:entitySpec:
@@ -361,16 +390,3 @@ brooklyn.catalog:
           enricher.aggregating.fromMembers: true
           enricher.sourceSensor: $brooklyn:sensor("host.address")
           enricher.targetSensor: $brooklyn:sensor("node.host.address.list")
-
-  - id: hyperledger-fabric-cluster
-    description: A Hyperledger Fabric cluster of validating peer nodes, a membership services node, and a CLI node
-    name: Hyperledger Fabric Cluster
-    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
-    itemType: template
-    item:
-      services:
-      - type: hyperledger-cluster
-        name: Hyperledger Fabric Cluster
-
-      - type: hyperledger-services-host
-        name: Membership Services and CLI Host
