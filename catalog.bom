@@ -148,7 +148,7 @@ brooklyn.catalog:
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):5000/registrar
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/add-membersrvc/chaincode-request-templates/login-template.json
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/login-template.json
             sed -i "s/ENROLL_ID/${enrollId}/g" body-${timestamp}.json
             sed -i "s/ENROLL_SECRET/${enrollSecret}/g" body-${timestamp}.json
 
@@ -183,7 +183,7 @@ brooklyn.catalog:
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):5000/chaincode
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/add-membersrvc/chaincode-request-templates/query-template-security.json
+            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/query-template-security.json
             sed -i "s/METHOD/query/g" body-${timestamp}.json
             sed -i "s/NAME/${name}/g" body-${timestamp}.json
             sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
