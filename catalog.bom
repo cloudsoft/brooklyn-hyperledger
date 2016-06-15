@@ -1,5 +1,6 @@
 brooklyn.catalog:
-  version: 0.1.0_SNAPSHOT
+  id: brooklyn-hyperledger-fabric
+  version: 0.2.1
 
   publish:
     description: |
@@ -8,7 +9,41 @@ brooklyn.catalog:
     icon_url: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
 
   items:
-  - id: docker-engine
+
+  - id: hyperledger-fabric-template
+    description: A Hyperledger Fabric cluster of validating peer nodes, a membership services node, and a CLI node
+    name: Hyperledger Fabric
+    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+    itemType: template
+    item:
+      services:
+      - type: hyperledger-fabric-cluster
+        id: hyperledger-deployment
+        name: "Hyperledger Fabric"
+
+  - id: hyperledger-fabric-cluster
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+      brooklyn.children:
+        - type: hyperledger-vp-cluster
+          name: Validating Peer Cluster
+
+        - type: hyperledger-services-host
+          name: Membership Services and CLI Host
+
+      brooklyn.parameters:
+      - name: hyperledger.vp.count
+        description: |
+          The number of Hyperledger Fabric validating peer nodes to create in the cluster.
+        type: integer
+        default: 4
+        constraints:
+          - required
+
+      brooklyn.config:
+        hyperledger.vp.count: 4
+
+  - id: hyperledger-docker-engine
     description: The engine for running Docker containers
     itemType: entity
     item:
@@ -61,6 +96,8 @@ brooklyn.catalog:
         - 31315
         # Hyperledger member services node
         - 50051
+        # Sequence service
+        - 9999
 
       childStartMode: foreground_late
 
@@ -75,19 +112,20 @@ brooklyn.catalog:
       brooklyn.config:
         secret.keys: "MwYpmSRjupbT;5wgHK9qqYaPy;vQelbRvja7cJ;9LKqKH5peurL"
 
+        launch.latch: $brooklyn:component("my-hyperledger-sequence-node").attributeWhenReady("service.isUp")
+
       shell.env:
         IS_ROOT_NODE: $brooklyn:config("is.root.node")
 
-        CLUSTER_INDEX: $brooklyn:config("cluster.index")
-
-        HYPERLEDGER_PEER_ID: $brooklyn:config("hyperledger.peer.id")
+        #CLUSTER_INDEX: $brooklyn:config("cluster.index")
+        #HYPERLEDGER_PEER_ID: $brooklyn:config("hyperledger.peer.id")
         HYPERLEDGER_CLUSTER_SIZE: $brooklyn:config("hyperledger.cluster.size")
         HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:config("hyperledger.root.node.address")
         HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:config("hyperledger.membersrvc.node.address")
 
         SECRET_KEYS: $brooklyn:config("secret.keys")
-
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+        SEQ_HOST_ADDRESS: $brooklyn:component("my-hyperledger-sequence-node").attributeWhenReady("host.address")
 
       install.command: |
         sudo docker pull mikezaccardo/hyperledger:latest
@@ -98,6 +136,9 @@ brooklyn.catalog:
 
       launch.command: |
         echo $HOST_ADDRESS > host-address
+
+        CLUSTER_INDEX=$(curl http://$SEQ_HOST_ADDRESS:9999/)
+        HYPERLEDGER_PEER_ID=vp$CLUSTER_INDEX
 
         IFS=';' read -ra SECRET_KEYS_ARRAY <<< "$SECRET_KEYS"
         SECRET=${SECRET_KEYS_ARRAY[$CLUSTER_INDEX]}
@@ -236,6 +277,48 @@ brooklyn.catalog:
       checkRunning.command: |
         sudo docker inspect -f {{.State.Running}} membersrvc
 
+  - id: hyperledger-sequence-node
+    description: A sequence node
+    itemType: entity
+    item:
+
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: Sequence Node
+      id: hyperledger-sequence
+
+      install.command: |
+        sudo yum -y install python
+
+      launch.command: |
+        cat > sequence.py <<"END"
+        from BaseHTTPServer import HTTPServer
+        from BaseHTTPServer import BaseHTTPRequestHandler
+
+        sequence = 0
+
+        class MyRequestHandler (BaseHTTPRequestHandler) :
+
+            def do_GET(self) :
+                global sequence
+
+                self.send_response(200)
+                self.send_header("Content-type:", "text/plain")
+                self.wfile.write("\n")
+
+                self.wfile.write(sequence)
+                sequence += 1
+
+        server = HTTPServer(("", 9999), MyRequestHandler)
+
+        server.serve_forever()
+        END
+
+        python sequence.py >nohup.out 2>&1 </dev/null & disown
+        echo $! > $PID_FILE
+
+      checkRunning.command: |
+        sudo netstat -nl | grep 9999
+
   - id: hyperledger-cli-node
     description: A Hyperledger Fabric CLI node
     itemType: entity
@@ -244,11 +327,8 @@ brooklyn.catalog:
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
       name: CLI Node
 
-      brooklyn.config:
-        launch.latch: $brooklyn:component("root-node").attributeWhenReady("service.isUp")
-
       shell.env:
-        HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("root-node").attributeWhenReady("host.address")
+        HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("dynamic-regions-fabric-instance").attributeWhenReady("cluster.root.node.address.value")
         HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
 
@@ -288,7 +368,7 @@ brooklyn.catalog:
     item:
 
       name: Validating Peer Docker Host
-      type: docker-engine
+      type: hyperledger-docker-engine
 
       brooklyn.children:
       - type: hyperledger-validating-peer-node
@@ -299,7 +379,7 @@ brooklyn.catalog:
     item:
 
       name: Membership Services and CLI Docker Host
-      type: docker-engine
+      type: hyperledger-docker-engine
 
       brooklyn.children:
       - type: hyperledger-membersrvc-node
@@ -308,7 +388,10 @@ brooklyn.catalog:
       - type: hyperledger-cli-node
         id: my-hyperledger-cli-node
 
-  - id: hyperledger-cluster
+      - type: hyperledger-sequence-node
+        id: my-hyperledger-sequence-node
+
+  - id: hyperledger-vp-cluster
     description: A cluster of Hyperledger Fabric validating peer nodes
     name: Hyperledger Fabric Cluster
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
@@ -316,7 +399,7 @@ brooklyn.catalog:
       type: org.apache.brooklyn.entity.group.DynamicCluster
 
       brooklyn.config:
-        initialSize: 4
+        initialSize: $brooklyn:config("hyperledger.vp.count")
 
       firstMemberSpec:
         $brooklyn:entitySpec:
@@ -327,14 +410,21 @@ brooklyn.catalog:
           brooklyn.config:
             is.root.node: true
 
-            cluster.index: $brooklyn:config("cluster.member.id")
+            #cluster.index: $brooklyn:config("cluster.member.id")
 
-            hyperledger.peer.id: vp0
+            #hyperledger.peer.id: vp0
             hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
-            hyperledger.root.node.address: $brooklyn:component("root-node").attributeWhenReady("host.address")
+            hyperledger.root.node.address: $brooklyn:attributeWhenReady("host.address")
             hyperledger.membersrvc.node.address: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
 
             launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
+
+          brooklyn.initializers:
+          - type: org.apache.brooklyn.core.sensor.StaticSensor
+            brooklyn.config:
+              name: my.root.node.address
+              targetType: java.lang.String
+              static.value: $brooklyn:attributeWhenReady("host.address")
 
       memberSpec:
         $brooklyn:entitySpec:
@@ -344,11 +434,11 @@ brooklyn.catalog:
           brooklyn.config:
             is.root.node: false
 
-            cluster.index: $brooklyn:config("cluster.member.id")
+            #cluster.index: $brooklyn:config("cluster.member.id")
 
-            hyperledger.peer.id: $brooklyn:formatString("vp%s", $brooklyn:config("cluster.member.id"))
+            #hyperledger.peer.id: $brooklyn:formatString("vp%s", $brooklyn:config("cluster.member.id"))
             hyperledger.cluster.size: $brooklyn:config("cluster.initial.size")
-            hyperledger.root.node.address: $brooklyn:component("root-node").attributeWhenReady("host.address")
+            hyperledger.root.node.address: $brooklyn:component("dynamic-regions-fabric-instance").attributeWhenReady("cluster.root.node.address.value")
             hyperledger.membersrvc.node.address: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
 
             launch.latch: $brooklyn:component("root-node").attributeWhenReady("service.isUp")
@@ -362,15 +452,48 @@ brooklyn.catalog:
           enricher.sourceSensor: $brooklyn:sensor("host.address")
           enricher.targetSensor: $brooklyn:sensor("node.host.address.list")
 
-  - id: hyperledger-fabric-cluster
-    description: A Hyperledger Fabric cluster of validating peer nodes, a membership services node, and a CLI node
-    name: Hyperledger Fabric Cluster
-    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
-    itemType: template
-    item:
-      services:
-      - type: hyperledger-cluster
-        name: Hyperledger Fabric Cluster
+      - type: org.apache.brooklyn.enricher.stock.Aggregator
+        brooklyn.config:
+          enricher.sourceSensor: $brooklyn:sensor("my.root.node.address")
+          enricher.targetSensor: $brooklyn:sensor("my.root.node.address.list")
+          enricher.aggregating.fromMembers: true
+          enricher.aggregator.excludeBlank: true
 
-      - type: hyperledger-services-host
-        name: Membership Services and CLI Host
+      - type: org.apache.brooklyn.enricher.stock.Joiner
+        brooklyn.config:
+          uniqueTag: tendermint-endpoint
+          enricher.sourceSensor: $brooklyn:sensor("my.root.node.address.list")
+          enricher.targetSensor: $brooklyn:sensor("cluster.root.node.address")
+          enricher.joiner.minimum: 1
+          enricher.joiner.maximum: 1
+          enricher.joiner.quote: false
+
+  - id: dynamic-regions-fabric
+    item:
+
+      name: Dynamic Regions Fabric
+      type: org.apache.brooklyn.entity.group.DynamicRegionsFabric
+      id: dynamic-regions-fabric-instance
+
+      memberSpec:
+        $brooklyn:entitySpec:
+          type: hyperledger-vp-cluster
+          name: Hyperledger Validating Peer Cluster
+
+      brooklyn.enrichers:
+      - type: org.apache.brooklyn.enricher.stock.Aggregator
+        brooklyn.config:
+          enricher.sourceSensor: $brooklyn:sensor("cluster.root.node.address")
+          enricher.targetSensor: $brooklyn:sensor("cluster.root.node.address.list")
+          enricher.aggregating.fromMembers: true
+          enricher.aggregator.excludeBlank: true
+
+      - type: org.apache.brooklyn.enricher.stock.Joiner
+        brooklyn.config:
+          uniqueTag: tendermint-endpoint
+          enricher.sourceSensor: $brooklyn:sensor("cluster.root.node.address.list")
+          enricher.targetSensor: $brooklyn:sensor("cluster.root.node.address.value")
+          # we want minimum 1 root node to be ready before publishing this sensor
+          enricher.joiner.minimum: 1
+          enricher.joiner.quote: false
+          enricher.joiner.separator: ","
