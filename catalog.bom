@@ -28,8 +28,26 @@ brooklyn.catalog:
         constraints:
           - required
 
+      - name: hyperledger.pbft.request.timeout
+        description: |
+          The number of seconds the PBFT plugin should wait when making requests.
+        type: integer
+        default: 120
+        constraints:
+          - required
+
+      - name: hyperledger.app.timeout
+        description: |
+          The number of seconds the demo app should wait between deploy, invoke, and query steps.
+        type: integer
+        default: 30
+        constraints:
+          - required
+
       brooklyn.config:
         hyperledger.peers.per.location: 4
+        hyperledger.pbft.request.timeout: 120
+        hyperledger.app.timeout: 30
 
   - id: hyperledger-fabric-cluster
     item:
@@ -92,7 +110,7 @@ brooklyn.catalog:
             --restart=unless-stopped \
             -i \
             -p 50051:50051 \
-            -e CORE_LOGGING_LEVEL=debug \
+            -e CORE_LOGGING_LEVEL=info \
             mikezaccardo/hyperledger-membersrvc:latest membersrvc >> ~/membersrvc.log 2>&1&
 
       checkRunning.command: |
@@ -116,6 +134,7 @@ brooklyn.catalog:
       shell.env:
         HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("host.address")
         HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
+        HYPERLEDGER_APP_TIMEOUT: $brooklyn:config("hyperledger.app.timeout")
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
 
       install.command: |
@@ -141,7 +160,7 @@ brooklyn.catalog:
                 cp /go/bin/core.yaml .; \
                 sed -i \"s/0.0.0.0/$HYPERLEDGER_ROOT_NODE_ADDRESS/g\" core.yaml; \
                 sed -i \"s/localhost/$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS/g\" core.yaml; \
-                sed -i \"s/30/180/g\" app.go; \
+                sed -i \"s/30/$HYPERLEDGER_APP_TIMEOUT/g\" app.go; \
                 curl -so infiniteloop.sh https://raw.githubusercontent.com/hyperledger/fabric/master/scripts/infiniteloop.sh; \
                 chmod +x infiniteloop.sh; \
                 ./infiniteloop.sh" >> ~/cli.log 2>&1&
@@ -247,6 +266,7 @@ brooklyn.catalog:
         HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("host.address")
         HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
         HYPERLEDGER_NUM_NON_ROOT_PEERS: $brooklyn:component("my-hyperledger-fabric-cluster").attributeWhenReady("fabric.size")
+        HYPERLEDGER_PBFT_REQUEST_TIMEOUT: $brooklyn:config("hyperledger.pbft.request.timeout")
 
         SECRET_KEYS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("secret.keys")
 
@@ -290,7 +310,7 @@ brooklyn.catalog:
             -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
             -e CORE_PEER_ADDRESSAUTODETECT=false \
             -e CORE_PEER_NETWORKID=dev \
-            -e CORE_LOGGING_LEVEL=debug \
+            -e CORE_LOGGING_LEVEL=info \
             -e CORE_SECURITY_ENABLED=true \
             -e CORE_SECURITY_PRIVACY=true \
             -e CORE_SECURITY_ENROLLID=test_$HYPERLEDGER_PEER_ID \
@@ -301,7 +321,7 @@ brooklyn.catalog:
             -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
             -e CORE_PBFT_GENERAL_MODE=classic \
             -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_TOTAL_SIZE \
-            -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=10s \
+            -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=${HYPERLEDGER_PBFT_REQUEST_TIMEOUT}s \
             mikezaccardo/hyperledger-peer:pbft peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
 
       checkRunning.command: |
