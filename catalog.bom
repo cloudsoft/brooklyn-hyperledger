@@ -28,22 +28,14 @@ brooklyn.catalog:
         constraints:
           - required
 
-      - name: hyperledger.cluster.total.size
-        description: |
-          The total number of Hyperledger Fabric validating peer nodes across all locations (including root node).
-        type: integer
-        default: 5
-        constraints:
-          - required
-
       brooklyn.config:
         hyperledger.peers.per.location: 4
-        hyperledger.cluster.total.size: 5
 
   - id: hyperledger-fabric-cluster
     item:
       name: Hyperledger Fabric Cluster
       type: org.apache.brooklyn.entity.group.DynamicRegionsFabric
+      id: my-hyperledger-fabric-cluster
 
       memberSpec:
         $brooklyn:entitySpec:
@@ -252,9 +244,9 @@ brooklyn.catalog:
       shell.env:
         IS_ROOT_NODE: $brooklyn:config("is.root.node")
 
-        HYPERLEDGER_CLUSTER_TOTAL_SIZE: $brooklyn:config("hyperledger.cluster.total.size")
         HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("host.address")
         HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
+        HYPERLEDGER_NUM_NON_ROOT_PEERS: $brooklyn:component("my-hyperledger-fabric-cluster").attributeWhenReady("fabric.size")
 
         SECRET_KEYS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("secret.keys")
 
@@ -277,6 +269,8 @@ brooklyn.catalog:
 
         IFS=';' read -ra SECRET_KEYS_ARRAY <<< "$SECRET_KEYS"
         SECRET=${SECRET_KEYS_ARRAY[$CLUSTER_INDEX]}
+
+        HYPERLEDGER_CLUSTER_TOTAL_SIZE=$(($HYPERLEDGER_NUM_NON_ROOT_PEERS + 1))
 
         # Additional arguments for peer nodes
         if [ $IS_ROOT_NODE == "false" ]; then
