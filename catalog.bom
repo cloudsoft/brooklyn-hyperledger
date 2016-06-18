@@ -40,7 +40,7 @@ brooklyn.catalog:
         description: |
           The number of seconds the demo app should wait between deploy, invoke, and query steps.
         type: integer
-        default: 30
+        default: 180
         constraints:
           - required
 
