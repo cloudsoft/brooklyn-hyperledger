@@ -1,6 +1,6 @@
 brooklyn.catalog:
   id: brooklyn-hyperledger-fabric
-  version: 0.3
+  version: 0.5
 
   publish:
     description: |
