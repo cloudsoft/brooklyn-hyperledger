@@ -10,14 +10,26 @@ brooklyn.catalog:
 
   items:
   - id: hyperledger-fabric-template
-    description: A Hyperledger Fabric cluster of a membership services node, a CLI node, a root validating peer node, and cluster(s) of validating peer nodes
+    description: |
+        A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
+        validating peer node, and cluster(s) of validating peer nodes
     name: "Hyperledger Fabric Cluster"
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: template
     item:
       services:
-      - type: hyperledger-fabric-cluster
+      - type: hyperledger-fabric
         name: Hyperledger Fabric Cluster
+
+  - id: hyperledger-fabric
+    description: |
+      A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
+      validating peer node, and cluster(s) of validating peer nodes
+    name: "Hyperledger Fabric Cluster"
+    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
 
       brooklyn.parameters:
       - name: hyperledger.peers.per.location
@@ -27,7 +39,6 @@ brooklyn.catalog:
         default: 4
         constraints:
           - required
-
       - name: hyperledger.pbft.request.timeout
         description: |
           The number of seconds the PBFT plugin should wait when making requests.
@@ -35,7 +46,6 @@ brooklyn.catalog:
         default: 120
         constraints:
           - required
-
       - name: hyperledger.app.timeout
         description: |
           The number of seconds the demo app should wait between deploy, invoke, and query steps.
@@ -48,6 +58,10 @@ brooklyn.catalog:
         hyperledger.peers.per.location: 4
         hyperledger.pbft.request.timeout: 120
         hyperledger.app.timeout: 30
+
+      brooklyn.children:
+      - type: hyperledger-fabric-cluster
+        name: Hyperledger Fabric Cluster
 
   - id: hyperledger-fabric-cluster
     item:
@@ -401,61 +415,3 @@ brooklyn.catalog:
 
             secureContext:
               description: "The registered user"
-
-  - id: hyperledger-docker-engine
-    description: The engine for running Docker containers
-    itemType: entity
-    item:
-
-      name: Docker Engine (host)
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-
-      install.command: |
-        sudo yum -y update
-        sudo tee /etc/yum.repos.d/docker.repo <<-'EOF'
-        [dockerrepo]
-        name=Docker Repository
-        baseurl=https://yum.dockerproject.org/repo/main/centos/$releasever/
-        enabled=1
-        gpgcheck=1
-        gpgkey=https://yum.dockerproject.org/gpg
-        EOF
-        sudo yum -y install docker-engine
-
-      post.install.command: |
-        # Configure Docker
-        sudo mkdir /etc/systemd/system/docker.service.d
-        echo "[Service]" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
-        echo "ExecStart=" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
-        echo 'ExecStart=/usr/bin/docker daemon -D --api-cors-header="*" -H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock' | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
-        sudo systemctl daemon-reload
-
-      launch.command: |
-        sudo service docker start
-
-      stop.command: |
-        sudo service docker stop
-
-      checkRunning.command: |
-        sudo service docker status
-
-      provisioning.properties:
-        osFamily: centos
-        minRam: 4gb
-        installDevUrandom: true
-        required.ports:
-        # SSH setup
-        - 22
-        # Docker daemon
-        - 4243
-        # Hyperledger peer nodes
-        - 5000
-        - 30303
-        - 30304
-        - 31315
-        # Hyperledger member services node
-        - 50051
-        # Sequence service
-        - 9999
-
-      childStartMode: foreground_late
