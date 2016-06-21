@@ -47,12 +47,17 @@ For more information about AMP locations, see this guide's [appendix](#appendix)
 ### Step 3: Add Hyperledger to the AMP Catalog
 
 * Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
-* Click the "Catalog" tab
-* Click the circle with a plus sign inside it (next to "Catalog" on the left)
-* Click "YAML" under "Add to Catalog"
-* This take you to the Blueprint Composer which should be set to "Catalog" by default
-* Copy and paste [catalog.bom](catalog.bom)
-* Click "Add to Catalog" button
+* Click the "Composer" tab
+* Toggle the "Catalog" option (set to "Application" by default)
+* Copy and paste the following:
+
+```
+    brooklyn.catalog:
+      items:
+      - https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/catalog.bom
+```
+
+* Click the "Add to Catalog" button
 
 
 ### Step 4: Deploy a Hyperledger Cluster
