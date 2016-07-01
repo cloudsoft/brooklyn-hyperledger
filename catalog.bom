@@ -115,9 +115,7 @@ brooklyn.catalog:
         launch.latch: $brooklyn:component("my-hyperledger-sequence-node").attributeWhenReady("service.isUp")
 
       install.command: |
-        sudo docker pull mikezaccardo/hyperledger:latest
-        sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
-        sudo docker pull mikezaccardo/hyperledger-membersrvc:latest
+        sudo docker pull hyperledger/fabric-membersrvc:latest
 
       launch.command: |
         nohup sudo docker run --name=membersrvc \
@@ -125,7 +123,7 @@ brooklyn.catalog:
             -i \
             -p 50051:50051 \
             -e CORE_LOGGING_LEVEL=info \
-            mikezaccardo/hyperledger-membersrvc:latest membersrvc >> ~/membersrvc.log 2>&1&
+            hyperledger/fabric-membersrvc:latest membersrvc >> ~/membersrvc.log 2>&1&
 
       checkRunning.command: |
         sudo docker inspect -f {{.State.Running}} membersrvc
@@ -152,9 +150,8 @@ brooklyn.catalog:
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
 
       install.command: |
-        sudo docker pull mikezaccardo/hyperledger:latest
-        sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
-        sudo docker pull mikezaccardo/hyperledger-peer:latest
+        sudo docker pull hyperledger/fabric-peer:latest
+        sudo docker tag hyperledger/fabric-peer:latest hyperledger/fabric-baseimage:latest
 
       launch.command:  |
         nohup sudo docker run --name=cli \
@@ -168,10 +165,10 @@ brooklyn.catalog:
             -e CORE_SECURITY_PRIVACY=true \
             -e HYPERLEDGER_ROOT_NODE_ADDRESS=$HYPERLEDGER_ROOT_NODE_ADDRESS \
             -e HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS \
-            -e APP_HOME=/go/src/github.com/hyperledger/fabric/examples/chaincode/go/asset_management/app \
-            mikezaccardo/hyperledger-peer:latest /bin/bash -c \
-                "cd /go/src/github.com/hyperledger/fabric/examples/chaincode/go/asset_management/app; \
-                cp /go/bin/core.yaml .; \
+            -e APP_HOME=/opt/gopath/src/github.com/hyperledger/fabric/examples/chaincode/go/asset_management/app \
+            hyperledger/fabric-peer:latest /bin/bash -c \
+                "cd /opt/gopath/src/github.com/hyperledger/fabric/examples/chaincode/go/asset_management/app; \
+                cp /opt/gopath/src/github.com/hyperledger/fabric/peer/core.yaml .; \
                 sed -i \"s/0.0.0.0/$HYPERLEDGER_ROOT_NODE_ADDRESS/g\" core.yaml; \
                 sed -i \"s/localhost/$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS/g\" core.yaml; \
                 sed -i \"s/30/$HYPERLEDGER_APP_TIMEOUT/g\" app.go; \
@@ -288,11 +285,8 @@ brooklyn.catalog:
         SEQ_HOST_ADDRESS: $brooklyn:component("my-hyperledger-sequence-node").attributeWhenReady("host.address")
 
       install.command: |
-        sudo docker pull mikezaccardo/hyperledger:latest
-        sudo docker tag mikezaccardo/hyperledger:latest hyperledger/fabric-baseimage:latest
-        sudo docker pull mikezaccardo/hyperledger-peer:latest
-        sudo docker pull mikezaccardo/hyperledger-peer:noops
-        sudo docker pull mikezaccardo/hyperledger-peer:pbft
+        sudo docker pull hyperledger/fabric-peer:latest
+        sudo docker tag hyperledger/fabric-peer:latest hyperledger/fabric-baseimage:latest
 
       launch.command: |
         echo $HOST_ADDRESS > host-address
@@ -336,7 +330,7 @@ brooklyn.catalog:
             -e CORE_PBFT_GENERAL_MODE=classic \
             -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_TOTAL_SIZE \
             -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=${HYPERLEDGER_PBFT_REQUEST_TIMEOUT}s \
-            mikezaccardo/hyperledger-peer:pbft peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+            hyperledger/fabric-peer:latest peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
 
       checkRunning.command: |
         # TODO actually query peer's status using `peer status` in container
