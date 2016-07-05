@@ -51,17 +51,38 @@ For more information about AMP locations, see this guide's [appendix](#appendix)
 * Click the circle with a plus sign inside it (next to "Catalog" on the left)
 * Click "YAML" under "Add to Catalog"
 * This take you to the Blueprint Composer which should be set to "Catalog" by default
-* Copy and paste [catalog.bom](catalog.bom)
+* Copy and paste [docker.bom](docker.bom)
 * Click "Add to Catalog" button
+* Repeat this process for [catalog.bom](catalog.bom)
 
 
-### Step 4: Deploy a Hyperledger Cluster
+### Step 4a: Deploy a Hyperledger Cluster (Single-location)
 
 * Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
 * Click the "+ add application" button
-* Click the "Hyperledger Fabric Cluster" tile
+* Click the "Hyperledger Fabric Cluster (Single-location)" tile
 * Click the "Next" button
 * Select the location that you previously created from the "Locations" drop-down list
+* Enter a name (optional)
+* Click the "Deploy" button
+
+
+### Step 4b: Deploy a Hyperledger Cluster (Multi-location)
+
+This deployment is capable of creating multiple clusters of validating peer nodes across different locations, all members of the same Hyperledger Fabric.
+
+Note that this deployment requires multiple locations to be configured.
+
+* Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
+* Click the "+ add application" button
+* Click the "Hyperledger Fabric Cluster (Multi-location)" tile
+* Click the "Next" button
+* Select a location from the list -- this is for the membership services and CLI hosts
+* Click "Add Additional Location"
+* Select another location from the list -- this is for the root validating peer node
+* Click "Add Additional Location"
+* Select another location from the list -- this is for a cluster of validating peer nodes
+* Continue adding additional locations to create additional clusters of validating peer nodes
 * Enter a name (optional)
 * Click the "Deploy" button
 
@@ -69,7 +90,6 @@ For more information about AMP locations, see this guide's [appendix](#appendix)
 ## Demo Application Instructions
 
 Once your cluster has successfully deployed, perform the following steps to deploy the asset management demonstration app.  This app repeatedly assigns an asset "Picasso" from one owner to another.  For more information about this app as well as its source code, see the [Fabric repository](https://github.com/hyperledger/fabric/tree/master/examples/chaincode/go/asset_management).
-
 
 ### Step 1: SSH into CLI Node
 
