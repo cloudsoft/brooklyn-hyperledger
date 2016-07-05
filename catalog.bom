@@ -9,23 +9,38 @@ brooklyn.catalog:
     icon_url: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
 
   items:
-  - id: hyperledger-fabric-template
+  - id: hyperledger-fabric-multi-location-template
     description: |
-        A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
-        validating peer node, and cluster(s) of validating peer nodes
-    name: "Hyperledger Fabric Cluster"
+      A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
+      validating peer node, and cluster(s) of validating peer nodes running in multiple
+      locations.
+    name: "Hyperledger Fabric Cluster (Multi-location)"
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: template
     item:
       services:
-      - type: hyperledger-fabric
-        name: Hyperledger Fabric Cluster
+      - type: hyperledger-fabric-multi-location
+        name: Hyperledger Fabric Cluster (Multi-location)
 
-  - id: hyperledger-fabric
+  - id: hyperledger-fabric-single-location-template
     description: |
       A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
-      validating peer node, and cluster(s) of validating peer nodes
-    name: "Hyperledger Fabric Cluster"
+      validating peer node, and cluster(s) of validating peer nodes running in a single
+      location.
+    name: "Hyperledger Fabric Cluster (Single-location)"
+    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+    itemType: template
+    item:
+      services:
+      - type: hyperledger-fabric-single-location
+        name: Hyperledger Fabric Cluster (Single-location)
+
+  - id: hyperledger-fabric-multi-location
+    description: |
+      A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
+      validating peer node, and cluster(s) of validating peer nodes running in multiple
+      locations.
+    name: "Hyperledger Fabric Cluster (Multi-location)"
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: entity
     item:
@@ -34,7 +49,8 @@ brooklyn.catalog:
       brooklyn.parameters:
       - name: hyperledger.peers.per.location
         description: |
-          The number of Hyperledger Fabric validating peer nodes to create in each location.
+          The number of Hyperledger Fabric validating peer nodes to create in each
+          location.
         type: integer
         default: 4
         constraints:
@@ -48,24 +64,70 @@ brooklyn.catalog:
           - required
       - name: hyperledger.app.timeout
         description: |
-          The number of seconds the demo app should wait between deploy, invoke, and query steps.
+          The number of seconds the demo app should wait between deploy, invoke, and query
+          steps.
         type: integer
         default: 180
         constraints:
           - required
 
       brooklyn.config:
-        hyperledger.peers.per.location: 4
+        hyperledger.peers.per.location: 3
         hyperledger.pbft.request.timeout: 120
         hyperledger.app.timeout: 30
 
       brooklyn.children:
-      - type: hyperledger-fabric-cluster
-        name: Hyperledger Fabric Cluster
+      - type: hyperledger-fabric-cluster-multi-location
+        name: Hyperledger Fabric Cluster (Multi-location)
 
-  - id: hyperledger-fabric-cluster
+  - id: hyperledger-fabric-single-location
+    description: |
+      A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
+      validating peer node, and cluster(s) of validating peer nodes running in a single
+      location.
+    name: "Hyperledger Fabric Cluster (Single-location)"
+    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+    itemType: entity
     item:
-      name: Hyperledger Fabric Cluster
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+
+      brooklyn.parameters:
+      - name: hyperledger.peers.per.location
+        description: |
+          The number of Hyperledger Fabric validating peer nodes to create in the single
+          location.
+        type: integer
+        default: 4
+        constraints:
+          - required
+      - name: hyperledger.pbft.request.timeout
+        description: |
+          The number of seconds the PBFT plugin should wait when making requests.
+        type: integer
+        default: 120
+        constraints:
+          - required
+      - name: hyperledger.app.timeout
+        description: |
+          The number of seconds the demo app should wait between deploy, invoke, and query
+          steps.
+        type: integer
+        default: 180
+        constraints:
+          - required
+
+      brooklyn.config:
+        hyperledger.peers.per.location: 3
+        hyperledger.pbft.request.timeout: 120
+        hyperledger.app.timeout: 30
+
+      brooklyn.children:
+      - type: hyperledger-fabric-cluster-single-location
+        name: Hyperledger Fabric Cluster (Single-location)
+
+  - id: hyperledger-fabric-cluster-multi-location
+    item:
+      name: Hyperledger Fabric Cluster (Multi-location)
       type: org.apache.brooklyn.entity.group.DynamicRegionsFabric
       id: my-hyperledger-fabric-cluster
 
@@ -85,8 +147,35 @@ brooklyn.catalog:
           is.root.node: true
           launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
 
+  - id: hyperledger-fabric-cluster-single-location
+    item:
+      name: Hyperledger Fabric Cluster (Single-location)
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+
+      brooklyn.children:
+      - type: org.apache.brooklyn.entity.group.DynamicRegionsFabric
+        name: Hyperledger Fabric Cluster (Single-location)
+        id: my-hyperledger-fabric-cluster
+
+        memberSpec:
+          $brooklyn:entitySpec:
+            type: hyperledger-vp-cluster
+            name: Hyperledger Validating Peer Cluster
+
+      - type: hyperledger-services-host
+        name: Membership Services and CLI Host
+
+      - type: hyperledger-validating-peer-host
+        id: my-hyperledger-root-node
+        name: Root Validating Peer Host
+        brooklyn.config:
+          is.root.node: true
+          launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
+
   - id: hyperledger-services-host
-    description: A Docker host running a Hyperledger Fabric Membership Services node, a CLI node, a sequence node, and the root validating peer node in separate containers
+    description: |
+      A Docker host running a Hyperledger Fabric Membership Services node, a CLI node, a
+      sequence node, and the root validating peer node in separate containers.
     itemType: entity
     item:
 
@@ -253,7 +342,8 @@ brooklyn.catalog:
           enricher.targetSensor: $brooklyn:sensor("node.host.address.list")
 
   - id: hyperledger-validating-peer-host
-    description: A Docker host running a Hyperledger Fabric validating peer node in a container
+    description: |
+      A Docker host running a Hyperledger Fabric validating peer node in a container
     itemType: entity
     item:
 
