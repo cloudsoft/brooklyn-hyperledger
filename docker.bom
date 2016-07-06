@@ -1,6 +1,6 @@
 brooklyn.catalog:
   id: brooklyn-hyperledger-fabric-docker
-  version: 0.5
+  version: 0.6
 
   publish:
     description: |
@@ -10,11 +10,11 @@ brooklyn.catalog:
 
   items:
   - id: hyperledger-docker-engine
-    description: The engine for running Docker containers
+    description: "The engine for running Docker containers"
     itemType: entity
     item:
 
-      name: Docker Engine (host)
+      name: "Docker Engine (host)"
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
 
       install.command: |

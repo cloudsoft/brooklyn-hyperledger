@@ -56,26 +56,27 @@ For more information about AMP locations, see this guide's [appendix](#appendix)
 * Repeat this process for [catalog.bom](catalog.bom)
 
 
-### Step 4a: Deploy a Hyperledger Cluster (Single-location)
+### Step 4a: Deploy a Hyperledger Fabric Cluster to One Location
 
 * Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
 * Click the "+ add application" button
-* Click the "Hyperledger Fabric Cluster (Single-location)" tile
+* Click the "Hyperledger Fabric Single-cluster" tile
 * Click the "Next" button
 * Select the location that you previously created from the "Locations" drop-down list
 * Enter a name (optional)
 * Click the "Deploy" button
 
 
-### Step 4b: Deploy a Hyperledger Cluster (Multi-location)
+### Step 4b: Deploy a Hyperledger Fabric Cluster to Multiple Locations
 
-This deployment is capable of creating multiple clusters of validating peer nodes across different locations, all members of the same Hyperledger Fabric.
+This deployment is capable of creating multiple clusters of validating peer nodes across
+different locations, all members of the same Hyperledger Fabric.
 
 Note that this deployment requires multiple locations to be configured.
 
 * Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
 * Click the "+ add application" button
-* Click the "Hyperledger Fabric Cluster (Multi-location)" tile
+* Click the "Hyperledger Fabric Multi-cluster" tile
 * Click the "Next" button
 * Select a location from the list -- this is for the membership services and CLI hosts
 * Click "Add Additional Location"

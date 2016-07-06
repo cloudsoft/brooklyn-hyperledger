@@ -1,6 +1,6 @@
 brooklyn.catalog:
   id: brooklyn-hyperledger-fabric
-  version: 0.5
+  version: 0.6
 
   publish:
     description: |
@@ -9,38 +9,38 @@ brooklyn.catalog:
     icon_url: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
 
   items:
-  - id: hyperledger-fabric-multi-location-template
+  - id: hyperledger-fabric-multi-cluster-template
     description: |
       A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
       validating peer node, and cluster(s) of validating peer nodes running in multiple
       locations.
-    name: "Hyperledger Fabric Cluster (Multi-location)"
+    name: "Hyperledger Fabric Multi-cluster"
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: template
     item:
       services:
-      - type: hyperledger-fabric-multi-location
-        name: Hyperledger Fabric Cluster (Multi-location)
+      - type: hyperledger-fabric-multi-cluster-application
+        name: "Hyperledger Fabric Multi-cluster"
 
-  - id: hyperledger-fabric-single-location-template
+  - id: hyperledger-fabric-single-cluster-template
     description: |
       A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
-      validating peer node, and cluster(s) of validating peer nodes running in a single
-      location.
-    name: "Hyperledger Fabric Cluster (Single-location)"
+      validating peer node, and a single cluster of validating peer nodes running in a
+      single location.
+    name: "Hyperledger Fabric Single-cluster"
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: template
     item:
       services:
-      - type: hyperledger-fabric-single-location
-        name: Hyperledger Fabric Cluster (Single-location)
+      - type: hyperledger-fabric-single-cluster-application
+        name: "Hyperledger Fabric Single-cluster"
 
-  - id: hyperledger-fabric-multi-location
+  - id: hyperledger-fabric-multi-cluster-application
     description: |
       A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
       validating peer node, and cluster(s) of validating peer nodes running in multiple
       locations.
-    name: "Hyperledger Fabric Cluster (Multi-location)"
+    name: "Hyperledger Fabric Multi-cluster"
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: entity
     item:
@@ -52,7 +52,7 @@ brooklyn.catalog:
           The number of Hyperledger Fabric validating peer nodes to create in each
           location.
         type: integer
-        default: 4
+        default: 3
         constraints:
           - required
       - name: hyperledger.pbft.request.timeout
@@ -77,15 +77,15 @@ brooklyn.catalog:
         hyperledger.app.timeout: 30
 
       brooklyn.children:
-      - type: hyperledger-fabric-cluster-multi-location
-        name: Hyperledger Fabric Cluster (Multi-location)
+      - type: hyperledger-fabric-multi-cluster
+        name: "Hyperledger Fabric Multi-cluster"
 
-  - id: hyperledger-fabric-single-location
+  - id: hyperledger-fabric-single-cluster-application
     description: |
       A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
       validating peer node, and cluster(s) of validating peer nodes running in a single
       location.
-    name: "Hyperledger Fabric Cluster (Single-location)"
+    name: "Hyperledger Fabric Single-cluster"
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: entity
     item:
@@ -97,7 +97,7 @@ brooklyn.catalog:
           The number of Hyperledger Fabric validating peer nodes to create in the single
           location.
         type: integer
-        default: 4
+        default: 3
         constraints:
           - required
       - name: hyperledger.pbft.request.timeout
@@ -122,52 +122,52 @@ brooklyn.catalog:
         hyperledger.app.timeout: 30
 
       brooklyn.children:
-      - type: hyperledger-fabric-cluster-single-location
-        name: Hyperledger Fabric Cluster (Single-location)
+      - type: hyperledger-fabric-single-cluster
+        name: "Hyperledger Fabric Single-cluster"
 
-  - id: hyperledger-fabric-cluster-multi-location
+  - id: hyperledger-fabric-multi-cluster
     item:
-      name: Hyperledger Fabric Cluster (Multi-location)
+      name: "Hyperledger Fabric Multi-cluster"
       type: org.apache.brooklyn.entity.group.DynamicRegionsFabric
       id: my-hyperledger-fabric-cluster
 
       memberSpec:
         $brooklyn:entitySpec:
           type: hyperledger-vp-cluster
-          name: Hyperledger Validating Peer Cluster
+          name: "Hyperledger Validating Peer Cluster"
 
       brooklyn.children:
       - type: hyperledger-services-host
-        name: Membership Services and CLI Host
+        name: "Membership Services and CLI Host"
 
       - type: hyperledger-validating-peer-host
         id: my-hyperledger-root-node
-        name: Root Validating Peer Host
+        name: "Root Validating Peer Host"
         brooklyn.config:
           is.root.node: true
           launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
 
-  - id: hyperledger-fabric-cluster-single-location
+  - id: hyperledger-fabric-single-cluster
     item:
-      name: Hyperledger Fabric Cluster (Single-location)
+      name: "Hyperledger Fabric Single-cluster"
       type: org.apache.brooklyn.entity.stock.BasicApplication
 
       brooklyn.children:
       - type: org.apache.brooklyn.entity.group.DynamicRegionsFabric
-        name: Hyperledger Fabric Cluster (Single-location)
+        name: "Hyperledger Fabric Single-cluster"
         id: my-hyperledger-fabric-cluster
 
         memberSpec:
           $brooklyn:entitySpec:
             type: hyperledger-vp-cluster
-            name: Hyperledger Validating Peer Cluster
+            name: "Hyperledger Validating Peer Cluster"
 
       - type: hyperledger-services-host
-        name: Membership Services and CLI Host
+        name: "Membership Services and CLI Host"
 
       - type: hyperledger-validating-peer-host
         id: my-hyperledger-root-node
-        name: Root Validating Peer Host
+        name: "Root Validating Peer Host"
         brooklyn.config:
           is.root.node: true
           launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
@@ -179,7 +179,7 @@ brooklyn.catalog:
     itemType: entity
     item:
 
-      name: Membership Services and CLI Docker Host
+      name: "Membership Services and CLI Docker Host"
       type: hyperledger-docker-engine
 
       brooklyn.children:
@@ -193,7 +193,7 @@ brooklyn.catalog:
         id: my-hyperledger-sequence-node
 
   - id: hyperledger-membersrvc-node
-    description: A Hyperledger Fabric membership services node
+    description: "A Hyperledger Fabric membership services node"
     itemType: entity
     item:
 
@@ -225,12 +225,12 @@ brooklyn.catalog:
           static.value: "MwYpmSRjupbT;5wgHK9qqYaPy;vQelbRvja7cJ;9LKqKH5peurL;Pqh90CEW5juZ;FfdvDkAdY81P;QiXJgHyV4t7A;twoKZouEyLyB;BxP7QNh778gI;wu3F1EwJWHvQ"
 
   - id: hyperledger-cli-node
-    description: A Hyperledger Fabric CLI node
+    description: "A Hyperledger Fabric CLI node"
     itemType: entity
     item:
 
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: CLI Node
+      name: "CLI Node"
 
       shell.env:
         HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("host.address")
@@ -269,12 +269,12 @@ brooklyn.catalog:
         sudo docker inspect -f {{.State.Running}} cli
 
   - id: hyperledger-sequence-node
-    description: A lightweight HTTP server that issues sequential integer values
+    description: "A lightweight HTTP server that issues sequential integer values"
     itemType: entity
     item:
 
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: Sequence Node
+      name: "Sequence Node"
       id: hyperledger-sequence
 
       install.command: |
@@ -314,8 +314,8 @@ brooklyn.catalog:
         sudo kill -9 $(cat $PID_FILE)
 
   - id: hyperledger-vp-cluster
-    description: A cluster of Hyperledger Fabric validating peer nodes
-    name: Hyperledger Fabric Cluster
+    description: "A cluster of Hyperledger Fabric validating peer nodes"
+    name: "Hyperledger Fabric Cluster"
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     item:
       type: org.apache.brooklyn.entity.group.DynamicCluster
@@ -326,7 +326,7 @@ brooklyn.catalog:
       memberSpec:
         $brooklyn:entitySpec:
           type: hyperledger-validating-peer-host
-          name: Validating Peer Docker Host
+          name: "Validating Peer Docker Host"
 
           brooklyn.config:
             is.root.node: false
@@ -347,19 +347,19 @@ brooklyn.catalog:
     itemType: entity
     item:
 
-      name: Validating Peer Docker Host
+      name: "Validating Peer Docker Host"
       type: hyperledger-docker-engine
 
       brooklyn.children:
       - type: hyperledger-validating-peer-node
 
   - id: hyperledger-validating-peer-node
-    description: A Hyperledger Fabric validating peer node
+    description: "A Hyperledger Fabric validating peer node"
     itemType: entity
     item:
 
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: Validating Peer Node
+      name: "Validating Peer Node"
 
       shell.env:
         IS_ROOT_NODE: $brooklyn:config("is.root.node")
@@ -429,8 +429,8 @@ brooklyn.catalog:
       brooklyn.initializers:
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
-          name: Login User
-          description: Logs in a registered user
+          name: "Login User"
+          description: "Logs in a registered user"
 
           command: |
             timestamp=$(date +%s)
@@ -451,8 +451,8 @@ brooklyn.catalog:
 
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
-          name: Check Login
-          description: Checks if a user is logged in
+          name: "Check Login"
+          description: "Checks if a user is logged in"
 
           command: |
             rest_endpoint=http://$(cat host-address):5000/registrar/${enrollId}
@@ -464,8 +464,8 @@ brooklyn.catalog:
 
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
-          name: Query Chaincode
-          description: Queries an example chaincode
+          name: "Query Chaincode"
+          description: "Queries an example chaincode"
 
           command: |
             timestamp=$(date +%s)
