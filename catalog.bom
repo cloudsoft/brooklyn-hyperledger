@@ -508,3 +508,12 @@ brooklyn.catalog:
 
             secureContext:
               description: "The registered user"
+
+      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+        brooklyn.config:
+          name: "List Peers"
+          description: "Retrieve information about the network of peer nodes comprising the blockchain network"
+
+          command: |
+            rest_endpoint=http://$(cat host-address):5000/network/peers
+            curl ${rest_endpoint}
