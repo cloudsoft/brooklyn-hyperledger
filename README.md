@@ -3,9 +3,6 @@
 This repository contains [Apache Brooklyn](https://brooklyn.apache.org/) blueprints for a
 [Hyperledger Fabric](https://github.com/hyperledger/fabric) cluster deployment.
 
-Currently the cluster uses the "noops" consensus plugin, but support for the "pbft" plugin
-and member services are both on the short-term roadmap.
-
 
 ## Deployment Instructions
 
