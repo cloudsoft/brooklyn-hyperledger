@@ -1,6 +1,6 @@
 brooklyn.catalog:
   id: brooklyn-hyperledger-fabric
-  version: 0.6
+  version: 0.7
 
   publish:
     description: |
@@ -206,6 +206,9 @@ brooklyn.catalog:
       install.command: |
         sudo docker pull hyperledger/fabric-membersrvc:latest
 
+      post.install.command: |
+        echo "Overriding parent post.install.command with no-op"
+
       launch.command: |
         nohup sudo docker run --name=membersrvc \
             --restart=unless-stopped \
@@ -241,6 +244,9 @@ brooklyn.catalog:
       install.command: |
         sudo docker pull hyperledger/fabric-peer:latest
         sudo docker tag hyperledger/fabric-peer:latest hyperledger/fabric-baseimage:latest
+
+      post.install.command: |
+        echo "Overriding parent post.install.command with no-op"
 
       launch.command:  |
         nohup sudo docker run --name=cli \
@@ -288,6 +294,9 @@ brooklyn.catalog:
 
       install.command: |
         sudo yum -y install python
+
+      post.install.command: |
+        echo "Overriding parent post.install.command with no-op"
 
       launch.command: |
         cat > sequence.py <<"END"
@@ -386,6 +395,9 @@ brooklyn.catalog:
       install.command: |
         sudo docker pull hyperledger/fabric-peer:latest
         sudo docker tag hyperledger/fabric-peer:latest hyperledger/fabric-baseimage:latest
+
+      post.install.command: |
+        echo "Overriding parent post.install.command with no-op"
 
       launch.command: |
         echo $HOST_ADDRESS > host-address
