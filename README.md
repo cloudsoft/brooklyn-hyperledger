@@ -49,9 +49,14 @@ For more information about AMP locations, see this guide's [appendix](#appendix)
 * Click the circle with a plus sign inside it (next to "Catalog" on the left)
 * Click "YAML" under "Add to Catalog"
 * This take you to the Blueprint Composer which should be set to "Catalog" by default
-* Copy and paste [docker.bom](docker.bom)
+* Copy and paste:
+```
+brooklyn.catalog:
+  items:
+  - https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/docker.bom
+  - https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/catalog.bom
+```
 * Click "Add to Catalog" button
-* Repeat this process for [catalog.bom](catalog.bom)
 
 
 ### Step 4a: Deploy a Hyperledger Fabric Cluster to One Location
