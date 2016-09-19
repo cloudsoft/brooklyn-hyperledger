@@ -293,7 +293,7 @@ brooklyn.catalog:
       id: hyperledger-sequence
 
       install.command: |
-        sudo yum -y install python
+        sudo yum -y install python net-tools
 
       post.install.command: |
         echo "Overriding parent post.install.command with no-op"
