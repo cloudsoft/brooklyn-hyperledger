@@ -213,7 +213,7 @@ brooklyn.catalog:
         nohup sudo docker run --name=membersrvc \
             --restart=unless-stopped \
             -i \
-            -p 50051:50051 \
+            -p 7054:7054 \
             -e CORE_LOGGING_LEVEL=info \
             hyperledger/fabric-membersrvc:latest membersrvc >> ~/membersrvc.log 2>&1&
 
@@ -251,10 +251,10 @@ brooklyn.catalog:
       launch.command:  |
         nohup sudo docker run --name=cli \
             -i \
-            -p 30303:30303 \
-            -p 30304:30304 \
+            -p 7051:7051 \
+            -p 7052:7052 \
             -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
+            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:7051 \
             -e CORE_PEER_ADDRESSAUTODETECT=false \
             -e CORE_SECURITY_ENABLED=true \
             -e CORE_SECURITY_PRIVACY=true \
@@ -413,20 +413,20 @@ brooklyn.catalog:
 
         # Additional arguments for peer nodes
         if [ $IS_ROOT_NODE == "false" ]; then
-          PEER_NODE_ARG="-e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:30303"
+          PEER_NODE_ARG="-e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:7051"
         fi
 
         nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
             --restart=unless-stopped \
             -i \
-            -p 5000:5000 \
-            -p 30303:30303 \
-            -p 30304:30304 \
-            -p 31315:31315 \
+            -p 7050:7050 \
+            -p 7051:7051 \
+            -p 7052:7052 \
+            -p 7053:7053 \
             -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
             -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
             $PEER_NODE_ARG \
-            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:30303 \
+            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:7051 \
             -e CORE_PEER_ADDRESSAUTODETECT=false \
             -e CORE_PEER_NETWORKID=dev \
             -e CORE_LOGGING_LEVEL=info \
@@ -434,9 +434,9 @@ brooklyn.catalog:
             -e CORE_SECURITY_PRIVACY=true \
             -e CORE_SECURITY_ENROLLID=test_$HYPERLEDGER_PEER_ID \
             -e CORE_SECURITY_ENROLLSECRET=$SECRET \
-            -e CORE_PEER_PKI_ECA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
-            -e CORE_PEER_PKI_TCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
-            -e CORE_PEER_PKI_TLSCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:50051 \
+            -e CORE_PEER_PKI_ECA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:7054 \
+            -e CORE_PEER_PKI_TCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:7054 \
+            -e CORE_PEER_PKI_TLSCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:7054 \
             -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
             -e CORE_PBFT_GENERAL_MODE=batch \
             -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_TOTAL_SIZE \
@@ -455,7 +455,7 @@ brooklyn.catalog:
 
           command: |
             timestamp=$(date +%s)
-            rest_endpoint=http://$(cat host-address):5000/registrar
+            rest_endpoint=http://$(cat host-address):7050/registrar
 
             curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/login-template.json
             sed -i "s/ENROLL_ID/${enrollId}/g" body-${timestamp}.json
@@ -476,7 +476,7 @@ brooklyn.catalog:
           description: "Checks if a user is logged in"
 
           command: |
-            rest_endpoint=http://$(cat host-address):5000/registrar/${enrollId}
+            rest_endpoint=http://$(cat host-address):7050/registrar/${enrollId}
             curl ${rest_endpoint}
 
           parameters:
@@ -490,7 +490,7 @@ brooklyn.catalog:
 
           command: |
             timestamp=$(date +%s)
-            rest_endpoint=http://$(cat host-address):5000/chaincode
+            rest_endpoint=http://$(cat host-address):7050/chaincode
 
             curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/query-template-security.json
             sed -i "s/METHOD/query/g" body-${timestamp}.json
@@ -527,5 +527,5 @@ brooklyn.catalog:
           description: "Retrieve information about the network of peer nodes comprising the blockchain network"
 
           command: |
-            rest_endpoint=http://$(cat host-address):5000/network/peers
+            rest_endpoint=http://$(cat host-address):7050/network/peers
             curl ${rest_endpoint}
