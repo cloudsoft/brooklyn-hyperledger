@@ -211,14 +211,15 @@ brooklyn.catalog:
 
       launch.command: |
         nohup sudo docker run --name=membersrvc \
-            --restart=unless-stopped \
+            --restart=always \
             -i \
             -p 7054:7054 \
             -e CORE_LOGGING_LEVEL=info \
             hyperledger/fabric-membersrvc:latest membersrvc >> ~/membersrvc.log 2>&1&
 
       checkRunning.command: |
-        sudo docker inspect -f {{.State.Running}} membersrvc
+        STATUS=$(sudo docker inspect -f {{.State.Running}} membersrvc)
+        sudo service docker status && [ "${STATUS}" = "true" ]
 
       brooklyn.initializers:
       - type: org.apache.brooklyn.core.sensor.StaticSensor
@@ -250,6 +251,7 @@ brooklyn.catalog:
 
       launch.command:  |
         nohup sudo docker run --name=cli \
+            --restart=always \
             -i \
             -p 7051:7051 \
             -p 7052:7052 \
@@ -272,7 +274,8 @@ brooklyn.catalog:
                 ./infiniteloop.sh" >> ~/cli.log 2>&1&
 
       checkRunning.command: |
-        sudo docker inspect -f {{.State.Running}} cli
+        STATUS=$(sudo docker inspect -f {{.State.Running}} cli)
+        sudo service docker status && [ "${STATUS}" = "true" ]
 
       brooklyn.initializers:
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
@@ -417,7 +420,7 @@ brooklyn.catalog:
         fi
 
         nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
-            --restart=unless-stopped \
+            --restart=always \
             -i \
             -p 7050:7050 \
             -p 7051:7051 \
@@ -444,8 +447,8 @@ brooklyn.catalog:
             hyperledger/fabric-peer:latest peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
 
       checkRunning.command: |
-        # TODO actually query peer's status using `peer status` in container
-        sudo docker inspect -f {{.State.Running}} $(cat hyperledger.peer.id)
+        STATUS=$(sudo docker inspect -f {{.State.Running}} $(cat hyperledger.peer.id))
+        sudo service docker status && [ "${STATUS}" = "true" ]
 
       brooklyn.initializers:
       - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector

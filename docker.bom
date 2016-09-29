@@ -35,6 +35,8 @@ brooklyn.catalog:
         echo "[Service]" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
         echo "ExecStart=" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
         echo 'ExecStart=/usr/bin/docker daemon -D --api-cors-header="*" -H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock' | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
+
+        sudo systemctl enable docker.service
         sudo systemctl daemon-reload
 
       launch.command: |
@@ -51,18 +53,18 @@ brooklyn.catalog:
         minRam: 4gb
         installDevUrandom: true
         required.ports:
-        # SSH setup
-        - 22
-        # Docker daemon
-        - 4243
-        # Hyperledger peer nodes
-        - 5000
-        - 30303
-        - 30304
-        - 31315
-        # Hyperledger member services node
-        - 50051
-        # Sequence service
-        - 9999
+          - 22
+          - 4243
+          - 7050
+          - 7051
+          - 7052
+          - 7053
+          - 7054
+          - 7055
+          - 7056
+          - 7057
+          - 7058
+          - 7059
+          - 9999
 
       childStartMode: foreground_late
