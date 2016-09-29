@@ -31,7 +31,7 @@ brooklyn.catalog:
 
       post.install.command: |
         # Configure Docker
-        sudo mkdir /etc/systemd/system/docker.service.d
+        sudo mkdir -p /etc/systemd/system/docker.service.d
         echo "[Service]" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
         echo "ExecStart=" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
         echo 'ExecStart=/usr/bin/docker daemon -D --api-cors-header="*" -H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock' | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
