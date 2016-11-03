@@ -373,7 +373,8 @@ brooklyn.catalog:
 
       brooklyn.children:
       - type: hyperledger-validating-peer-node
-
+        id: my-hyperledger-validating-peer-node
+        
   - id: hyperledger-validating-peer-node
     description: "A Hyperledger Fabric validating peer node"
     itemType: entity

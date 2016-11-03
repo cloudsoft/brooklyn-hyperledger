@@ -1,0 +1,97 @@
+brooklyn.catalog:
+  version: 0.8-SNAPSHOT
+  iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+  license_code: Apache-2.0
+  license_url: http://www.apache.org/licenses/LICENSE-2.0.txt
+  dependsOn:
+  # From https://github.com/brooklyncentral/common-catalog-utils
+  - commontests/common.tests.bom
+
+  items:
+  - "https://raw.githubusercontent.com/brooklyncentral/common-catalog-utils/master/common-tests/src/main/resources/commontests/common.tests.bom"
+
+  - id: hyperledger-fabric-single-cluster-application-test
+    itemType: template
+    name: Hyperledger Cluster Test
+    item:
+      services:
+      - type: hyperledger-fabric-single-cluster-application
+        id: target-app
+
+      - type: test-case
+        name: Hyperledger assertions
+        brooklyn.config:
+          targetId: target-app
+          timeout: 30m
+          timeout.initialStartup: 1h
+        brooklyn.children:
+
+        - type: assert-up-and-running-initial
+
+        - type: invoke-effector
+          name: Example blockchain app
+          brooklyn.config:
+            targetId: my-hyperledger-cli-node
+            effector: Run Demo Application
+            # TODO Want to assert output contains "Dave is the owner!", but that is in the shh stderr
+            # rather than the stdout, so it is not in the effector's result
+        
+        - type: invoke-effector
+          brooklyn.config:
+            targetId: my-hyperledger-validating-peer-node
+            effector: List Peers
+            assert:
+              # TODO Want to assert that output is something like:
+              #   {"peers":[{"ID":{"name":"vp0"},"address":"54.254.150.57:7051","type":1,"pkiID":"x2LHZ+F5ghXSHsiZLK+6FY8USd5vXI/eYUngNR8rrxc="},{"ID":{"name":"vp2"},"address":"54.254.129.186:7051","type":1,"pkiID":"sRpHvOO7amqrJIeVzSimx4qftYo3cwQj0SyBAGxtZY0="},{"ID":{"name":"vp1"},"address":"54.179.187.142:7051","type":1,"pkiID":"gdXmOdLhl0W5wcYtRV5o46AVIPkNLTm2aaLUz0NQuEg="},{"ID":{"name":"vp3"},"address":"54.169.187.161:7051","type":1,"pkiID":"88278DhXd5AkiIXE3fexTIlhFIOBbLi2hInTxziAQew="}]}
+              # Sam previously used test-ssh-succeeds with:
+              #   command: curl http://localhost:5000/network/peers | grep -o address | wc -l
+              # but we'd prefer to use the effector (note the different in URL and port as well)
+              contains: "vp2"
+
+
+  - id: hyperledger-fabric-multi-cluster-application-test
+    itemType: template
+    name: Hyperledger Fabric Test
+    item:
+      services:
+      - type: hyperledger-fabric-multi-cluster-application
+        id: target-app
+
+      - type: org.apache.brooklyn.test.framework.TestCase
+        name: Hyperledger assertions
+        brooklyn.config:
+          targetId: target-app
+          timeout: 30m
+          timeout.initialStartup: 1h
+        brooklyn.children:
+
+        - type: assert-up-and-running-initial
+
+        - type: invoke-effector
+          name: Example blockchain app
+          brooklyn.config:
+            targetId: my-hyperledger-cli-node
+            effector: Run Demo Application
+            # TODO See todo under hyperledger-fabric-single-cluster-application-test
+
+        - type: org.apache.brooklyn.test.framework.LoopOverGroupMembersTestCase
+          name: For each cluster
+          brooklyn.config:
+            testSpec:
+              $brooklyn:entitySpec:
+                type: org.apache.brooklyn.test.framework.RelativeEntityTestCase
+
+                brooklyn.config:
+                  # target entity set by LoopOverGroupMembersTestCase.
+                  component: $brooklyn:descendant("my-hyperledger-validating-peer-node")
+
+                brooklyn.children:
+                - type: assert-up-and-running-initial
+
+                - type: invoke-effector
+                  brooklyn.config:
+                    targetId: my-hyperledger-validating-peer-node
+                    effector: List Peers
+                    assert:
+                      # TODO See todo under hyperledger-fabric-single-cluster-application-test
+                      contains: "vp2"
