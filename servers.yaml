@@ -1,0 +1,248 @@
+---
+default_config:
+    check_newer_vagrant_box: true
+    run_os_update: true
+servers:
+  - name: amp
+    box: ubuntu/wily64
+    ram: 2048
+    cpus: 4
+    ip: 10.10.10.100
+    forwarded_ports:
+     - guest: 8081
+       host: 8081
+       autocorrect: true
+    shell:
+      cmd:
+        - /vagrant/files/install_amp.sh
+  - name: byon1
+    box: centos/7
+    ram: 512
+    cpus: 2
+    ip: 10.10.10.101
+    forwarded_ports:
+     - guest: 4243
+       host: 4243
+       autocorrect: true
+     - guest: 7050
+       host: 7050
+       autocorrect: true
+     - guest: 7051
+       host: 7051
+       autocorrect: true
+     - guest: 7052
+       host: 7052
+       autocorrect: true
+     - guest: 7053
+       host: 7053
+       autocorrect: true
+     - guest: 7054
+       host: 7054
+       autocorrect: true
+     - guest: 7055
+       host: 7055
+       autocorrect: true
+     - guest: 7056
+       host: 7056
+       autocorrect: true
+     - guest: 7057
+       host: 7057
+       autocorrect: true
+     - guest: 7058
+       host: 7058
+       autocorrect: true
+     - guest: 7059
+       host: 7059
+       autocorrect: true
+     - guest: 9999
+       host: 9999
+       autocorrect: true
+    shell:
+      cmd:
+        - sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+        - sudo service sshd restart
+  - name: byon2
+    box: centos/7
+    ram: 512
+    cpus: 2
+    ip: 10.10.10.102
+    forwarded_ports:
+     - guest: 4243
+       host: 4243
+       autocorrect: true
+     - guest: 7050
+       host: 7050
+       autocorrect: true
+     - guest: 7051
+       host: 7051
+       autocorrect: true
+     - guest: 7052
+       host: 7052
+       autocorrect: true
+     - guest: 7053
+       host: 7053
+       autocorrect: true
+     - guest: 7054
+       host: 7054
+       autocorrect: true
+     - guest: 7055
+       host: 7055
+       autocorrect: true
+     - guest: 7056
+       host: 7056
+       autocorrect: true
+     - guest: 7057
+       host: 7057
+       autocorrect: true
+     - guest: 7058
+       host: 7058
+       autocorrect: true
+     - guest: 7059
+       host: 7059
+       autocorrect: true
+     - guest: 9999
+       host: 9999
+       autocorrect: true
+    shell:
+      cmd:
+        - sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+        - sudo service sshd restart
+  - name: byon3
+    box: centos/7
+    ram: 512
+    cpus: 2
+    ip: 10.10.10.103
+    forwarded_ports:
+     - guest: 4243
+       host: 4243
+       autocorrect: true
+     - guest: 7050
+       host: 7050
+       autocorrect: true
+     - guest: 7051
+       host: 7051
+       autocorrect: true
+     - guest: 7052
+       host: 7052
+       autocorrect: true
+     - guest: 7053
+       host: 7053
+       autocorrect: true
+     - guest: 7054
+       host: 7054
+       autocorrect: true
+     - guest: 7055
+       host: 7055
+       autocorrect: true
+     - guest: 7056
+       host: 7056
+       autocorrect: true
+     - guest: 7057
+       host: 7057
+       autocorrect: true
+     - guest: 7058
+       host: 7058
+       autocorrect: true
+     - guest: 7059
+       host: 7059
+       autocorrect: true
+     - guest: 9999
+       host: 9999
+       autocorrect: true
+    shell:
+      cmd:
+        - sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+        - sudo service sshd restart
+  - name: byon4
+    box: centos/7
+    ram: 512
+    cpus: 2
+    ip: 10.10.10.104
+    forwarded_ports:
+     - guest: 4243
+       host: 4243
+       autocorrect: true
+     - guest: 7050
+       host: 7050
+       autocorrect: true
+     - guest: 7051
+       host: 7051
+       autocorrect: true
+     - guest: 7052
+       host: 7052
+       autocorrect: true
+     - guest: 7053
+       host: 7053
+       autocorrect: true
+     - guest: 7054
+       host: 7054
+       autocorrect: true
+     - guest: 7055
+       host: 7055
+       autocorrect: true
+     - guest: 7056
+       host: 7056
+       autocorrect: true
+     - guest: 7057
+       host: 7057
+       autocorrect: true
+     - guest: 7058
+       host: 7058
+       autocorrect: true
+     - guest: 7059
+       host: 7059
+       autocorrect: true
+     - guest: 9999
+       host: 9999
+       autocorrect: true
+    shell:
+      cmd:
+        - sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+        - sudo service sshd restart
+  - name: byon5
+    box: centos/7
+    ram: 512
+    cpus: 2
+    ip: 10.10.10.105
+    forwarded_ports:
+     - guest: 4243
+       host: 4243
+       autocorrect: true
+     - guest: 7050
+       host: 7050
+       autocorrect: true
+     - guest: 7051
+       host: 7051
+       autocorrect: true
+     - guest: 7052
+       host: 7052
+       autocorrect: true
+     - guest: 7053
+       host: 7053
+       autocorrect: true
+     - guest: 7054
+       host: 7054
+       autocorrect: true
+     - guest: 7055
+       host: 7055
+       autocorrect: true
+     - guest: 7056
+       host: 7056
+       autocorrect: true
+     - guest: 7057
+       host: 7057
+       autocorrect: true
+     - guest: 7058
+       host: 7058
+       autocorrect: true
+     - guest: 7059
+       host: 7059
+       autocorrect: true
+     - guest: 9999
+       host: 9999
+       autocorrect: true
+    shell:
+      cmd:
+        - sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+        - sudo service sshd restart
+...
