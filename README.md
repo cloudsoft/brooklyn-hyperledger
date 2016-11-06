@@ -22,6 +22,15 @@ cd amp-vagrant
 vagrant up amp
 ```
 
+If you plan on deploying to Vagrant VMs running locally, run these commands instead:
+```
+git clone https://github.com/cloudsoft/amp-vagrant
+cd amp-vagrant
+mv servers.yaml servers.yaml.bak
+wget https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/servers.yaml
+vagrant up amp byon1 byon2 byon3 byon4 byon5
+```
+
 If this is successful Cloudsoft AMP will be available at: [http://10.10.10.100:8081/](http://10.10.10.100:8081/) with "admin" and "password" as the default username and password, respectively.
 For more information about getting AMP running, see [this guide](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html).
 
@@ -37,6 +46,18 @@ Note: These steps assume you already have Virtualbox and Vagrant installed on yo
 * Select the desired type of location and fill in the required fields
 
 Be sure to make note of the "Location ID" that you choose during the final step.
+
+If you plan on deploying to Vagrant VMs running locally, follow
+[this guide](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html#add-a-location)
+to add them as a deployment location. Note that you should include the following IP addresses in the "Hosts" text field:
+
+```
+10.10.10.101
+10.10.10.102
+10.10.10.103
+10.10.10.104
+10.10.10.105
+```
 
 For more information about AMP locations, see this guide's [appendix](#appendix) and
 [the Apache Brooklyn documentation](https://brooklyn.apache.org/v/latest/ops/locations/).
@@ -68,6 +89,9 @@ brooklyn.catalog:
 * Select the location that you previously created from the "Locations" drop-down list
 * Enter a name (optional)
 * Click the "Deploy" button
+
+If you plan on deploying to Vagrant VMs running locally, only deployment to one location is supported
+with a maximum cluster size of 3.
 
 
 ### Step 4b: Deploy a Hyperledger Fabric Cluster to Multiple Locations
