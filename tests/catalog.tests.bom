@@ -12,14 +12,14 @@ brooklyn.catalog:
 
   - id: hyperledger-fabric-single-cluster-application-test
     itemType: template
-    name: Hyperledger Cluster Test
+    name: Hyperledger Fabric Single-cluster Test
     item:
       services:
       - type: hyperledger-fabric-single-cluster-application
         id: target-app
 
       - type: test-case
-        name: Hyperledger assertions
+        name: Hyperledger QA Tests
         brooklyn.config:
           targetId: target-app
           timeout: 30m
@@ -35,7 +35,7 @@ brooklyn.catalog:
             effector: Run Demo Application
             # TODO Want to assert output contains "Dave is the owner!", but that is in the shh stderr
             # rather than the stdout, so it is not in the effector's result
-        
+
         - type: invoke-effector
           brooklyn.config:
             targetId: my-hyperledger-validating-peer-node
@@ -51,14 +51,14 @@ brooklyn.catalog:
 
   - id: hyperledger-fabric-multi-cluster-application-test
     itemType: template
-    name: Hyperledger Fabric Test
+    name: Hyperledger Fabric Multi-cluster Test
     item:
       services:
       - type: hyperledger-fabric-multi-cluster-application
         id: target-app
 
       - type: org.apache.brooklyn.test.framework.TestCase
-        name: Hyperledger assertions
+        name: Hyperledger QA Tests
         brooklyn.config:
           targetId: target-app
           timeout: 30m
