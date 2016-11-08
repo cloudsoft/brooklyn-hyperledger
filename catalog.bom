@@ -1,6 +1,6 @@
 brooklyn.catalog:
   id: brooklyn-hyperledger-fabric
-  version: 0.8-SNAPSHOT
+  version: 0.9-SNAPSHOT
 
   publish:
     description: |
@@ -74,7 +74,7 @@ brooklyn.catalog:
       brooklyn.config:
         hyperledger.peers.per.location: 3
         hyperledger.pbft.request.timeout: 120
-        hyperledger.app.timeout: 30
+        hyperledger.app.timeout: 180
 
       brooklyn.children:
       - type: hyperledger-fabric-multi-cluster
@@ -112,7 +112,7 @@ brooklyn.catalog:
           The number of seconds the demo app should wait between deploy, invoke, and query
           steps.
         type: integer
-        default: 180
+        default: 30
         constraints:
           - required
 
@@ -284,7 +284,7 @@ brooklyn.catalog:
           description: "Runs the asset management demo application."
 
           command: |
-            sudo docker exec -i cli bash '-c' 'cd $APP_HOME && go build && ./app'
+            sudo docker exec -i cli bash '-c' 'cd $APP_HOME && go build && ./app' 2>&1
 
   - id: hyperledger-sequence-node
     description: "A lightweight HTTP server that issues sequential integer values"
@@ -373,6 +373,7 @@ brooklyn.catalog:
 
       brooklyn.children:
       - type: hyperledger-validating-peer-node
+        id: my-hyperledger-validating-peer-node
 
   - id: hyperledger-validating-peer-node
     description: "A Hyperledger Fabric validating peer node"
