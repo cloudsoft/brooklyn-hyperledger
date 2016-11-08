@@ -1,6 +1,6 @@
 brooklyn.catalog:
   id: brooklyn-hyperledger-fabric
-  version: 0.8-SNAPSHOT
+  version: 0.9-SNAPSHOT
 
   publish:
     description: |
@@ -284,7 +284,7 @@ brooklyn.catalog:
           description: "Runs the asset management demo application."
 
           command: |
-            sudo docker exec -i cli bash '-c' 'cd $APP_HOME && go build && ./app'
+            sudo docker exec -i cli bash '-c' 'cd $APP_HOME && go build && ./app' 2>&1
 
   - id: hyperledger-sequence-node
     description: "A lightweight HTTP server that issues sequential integer values"

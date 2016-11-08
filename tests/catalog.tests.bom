@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: 0.8-SNAPSHOT
+  version: 0.9-SNAPSHOT
   iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
   license_code: Apache-2.0
   license_url: http://www.apache.org/licenses/LICENSE-2.0.txt
@@ -24,74 +24,48 @@ brooklyn.catalog:
           targetId: target-app
           timeout: 30m
           timeout.initialStartup: 1h
-        brooklyn.children:
 
+        brooklyn.children:
         - type: assert-up-and-running-initial
 
         - type: invoke-effector
-          name: Example blockchain app
+          name: Run Demo Application Effector Test
           brooklyn.config:
             targetId: my-hyperledger-cli-node
             effector: Run Demo Application
-            # TODO Want to assert output contains "Dave is the owner!", but that is in the shh stderr
-            # rather than the stdout, so it is not in the effector's result
+            assert:
+              contains: "Dave is the owner!"
 
         - type: invoke-effector
+          name: List Peers Effector Test
           brooklyn.config:
             targetId: my-hyperledger-validating-peer-node
             effector: List Peers
             assert:
-              # TODO Want to assert that output is something like:
-              #   {"peers":[{"ID":{"name":"vp0"},"address":"54.254.150.57:7051","type":1,"pkiID":"x2LHZ+F5ghXSHsiZLK+6FY8USd5vXI/eYUngNR8rrxc="},{"ID":{"name":"vp2"},"address":"54.254.129.186:7051","type":1,"pkiID":"sRpHvOO7amqrJIeVzSimx4qftYo3cwQj0SyBAGxtZY0="},{"ID":{"name":"vp1"},"address":"54.179.187.142:7051","type":1,"pkiID":"gdXmOdLhl0W5wcYtRV5o46AVIPkNLTm2aaLUz0NQuEg="},{"ID":{"name":"vp3"},"address":"54.169.187.161:7051","type":1,"pkiID":"88278DhXd5AkiIXE3fexTIlhFIOBbLi2hInTxziAQew="}]}
-              # Sam previously used test-ssh-succeeds with:
-              #   command: curl http://localhost:5000/network/peers | grep -o address | wc -l
-              # but we'd prefer to use the effector (note the different in URL and port as well)
-              contains: "vp2"
-
-
-  - id: hyperledger-fabric-multi-cluster-application-test
-    itemType: template
-    name: Hyperledger Fabric Multi-cluster Test
-    item:
-      services:
-      - type: hyperledger-fabric-multi-cluster-application
-        id: target-app
-
-      - type: org.apache.brooklyn.test.framework.TestCase
-        name: Hyperledger QA Tests
-        brooklyn.config:
-          targetId: target-app
-          timeout: 30m
-          timeout.initialStartup: 1h
-        brooklyn.children:
-
-        - type: assert-up-and-running-initial
+              - contains: "vp0"
+              - contains: "vp1"
+              - contains: "vp2"
+              - contains: "vp3"
 
         - type: invoke-effector
-          name: Example blockchain app
+          name: Login User Effector Test
           brooklyn.config:
-            targetId: my-hyperledger-cli-node
-            effector: Run Demo Application
-            # TODO See todo under hyperledger-fabric-single-cluster-application-test
+            targetId: my-hyperledger-validating-peer-node
+            effector: Login User
+            params:
+              enrollId: test_user0
+              enrollSecret: MS9qrN8hFjlE
+            timeout: 2m
+            assert:
+            - contains: "Login successful for user 'test_user0'"
 
-        - type: org.apache.brooklyn.test.framework.LoopOverGroupMembersTestCase
-          name: For each cluster
+        - type: invoke-effector
+          name: Check Login Effector Test
           brooklyn.config:
-            testSpec:
-              $brooklyn:entitySpec:
-                type: org.apache.brooklyn.test.framework.RelativeEntityTestCase
-
-                brooklyn.config:
-                  # target entity set by LoopOverGroupMembersTestCase.
-                  component: $brooklyn:descendant("my-hyperledger-validating-peer-node")
-
-                brooklyn.children:
-                - type: assert-up-and-running-initial
-
-                - type: invoke-effector
-                  brooklyn.config:
-                    targetId: my-hyperledger-validating-peer-node
-                    effector: List Peers
-                    assert:
-                      # TODO See todo under hyperledger-fabric-single-cluster-application-test
-                      contains: "vp2"
+            targetId: my-hyperledger-validating-peer-node
+            effector: Check Login
+            params:
+              enrollId: test_user0
+            timeout: 2m
+            assert:
+            - contains: "User test_user0 is already logged in"
