@@ -19,16 +19,18 @@ Then follow the online instructions (reproduced here for simplicity):
 ```
 git clone https://github.com/cloudsoft/amp-vagrant
 cd amp-vagrant
+```
+
+If you plan on deploying Hyperledger to external infrastructure, simply run:
+```
 vagrant up amp
 ```
 
-If you plan on deploying to Vagrant VMs running locally, run these commands instead:
+If you plan on deploying Hyperledger to Vagrant VMs running locally, run these commands instead:
 ```
-git clone https://github.com/cloudsoft/amp-vagrant
-cd amp-vagrant
 mv servers.yaml servers.yaml.bak
-wget https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/servers.yaml
-vagrant up amp byon1 byon2 byon3 byon4 byon5
+curl -O https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/servers.yaml
+vagrant up
 ```
 
 If this is successful Cloudsoft AMP will be available at: [http://10.10.10.100:8081/](http://10.10.10.100:8081/) with "admin" and "password" as the default username and password, respectively.
@@ -91,7 +93,8 @@ brooklyn.catalog:
 * Click the "Deploy" button
 
 If you plan on deploying to Vagrant VMs running locally, only deployment to one location is supported
-with a maximum cluster size of 3.
+with a maximum cluster size of 3. However, the size of the cluster can be increased if you add more VMs
+to [servers.yaml](servers.yaml).
 
 
 ### Step 4b: Deploy a Hyperledger Fabric Cluster to Multiple Locations
@@ -119,7 +122,18 @@ Note that this deployment requires multiple locations to be configured.
 
 Once your cluster has successfully deployed, perform the following steps to deploy the asset management demonstration app.  This app repeatedly assigns an asset "Picasso" from one owner to another.  For more information about this app as well as its source code, see the [Fabric repository](https://github.com/hyperledger/fabric/tree/master/examples/chaincode/go/asset_management).
 
-### Step 1: SSH into CLI Node
+### Run Using AMP Effector
+* Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
+* Click on the "Applications" tab
+* Hover over the ">" under "Hyperledger Fabric Application" (or your custom name)
+* Click "Expand All"
+* Click "CLI Node"
+* Click the "Effectors" tab
+* Click "Invoke" next to "Run Demo Application"
+
+### Run Manually
+
+#### Step 1: SSH into CLI Node
 
 * Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
 * Click on the "Applications" tab
@@ -136,7 +150,7 @@ deployment location's configuration.
 Note 2: If `host.sshAddress` ends with a port (e.g. `:22`), remove the colon and the port from the SSH command.
 
 
-### Step 2: Build and Run the Asset Management App
+#### Step 2: Build and Run the Asset Management App
 
 From the same terminal window from the previous step, execute the following commands:
 ```
