@@ -1,5 +1,4 @@
 brooklyn.catalog:
-  id: brooklyn-hyperledger-fabric
   version: 0.9-SNAPSHOT
 
   publish:
