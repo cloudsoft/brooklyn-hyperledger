@@ -17,6 +17,8 @@ brooklyn.catalog:
       services:
       - type: hyperledger-fabric-single-cluster-application
         id: target-app
+        brooklyn.config:
+          hyperledger.app.timeout: 180
 
       - type: test-case
         name: Hyperledger QA Tests
