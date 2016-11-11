@@ -36,7 +36,12 @@ vagrant up
 If this is successful Cloudsoft AMP will be available at: [http://10.10.10.100:8081/](http://10.10.10.100:8081/) with "admin" and "password" as the default username and password, respectively.
 For more information about getting AMP running, see [this guide](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html).
 
-Note: These steps assume you already have Virtualbox and Vagrant installed on your local machine and have external network access to the Ubuntu update repositories and the Cloudsoft Artifactory server.
+Note 1: These steps assume you already have Virtualbox and Vagrant installed on your local machine and have external network access to the Ubuntu update repositories and the Cloudsoft Artifactory server.
+
+Note 2: If you're on Windows, you'll need to run Vagrant from a [Cygwin](https://cygwin.com/install.html) terminal
+with the `rsync` and `openssl` packages installed (be sure to select these packages when running the Cygwin installer).
+If you already have Cygwin installed, simply re-run the setup executable and follow the installation prompts to install
+the necessary packages.
 
 
 ### Step 2: Create a Deployment Location
@@ -148,6 +153,10 @@ Note 1: You may need to supply an SSH key or a username / password depending on 
 deployment location's configuration.
 
 Note 2: If `host.sshAddress` ends with a port (e.g. `:22`), remove the colon and the port from the SSH command.
+
+Note 3: If you deployed to local Vagrant VMs, you can SSH into any of these VMs by running this command instead:
+`vagrant ssh byon<number here>`. The name of the VM is based on the last digit of the IP address.
+For example, if the CLI node's IP is `10.10.10.102` then the command would be: `vagrant ssh byon2`.
 
 
 #### Step 2: Build and Run the Asset Management App
