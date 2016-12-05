@@ -9,40 +9,42 @@ This repository contains [Apache Brooklyn](https://brooklyn.apache.org/) bluepri
 You can skip Step 1 if you have previously installed Cloudsoft AMP.
 
 
+### Step 0: Install Prerequisites
+
+* [Git](https://git-scm.com/downloads)
+* [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
+* [Vagrant](https://www.vagrantup.com/downloads.html)
+
+If you are running on Windows, you'll also need:
+* [Cygwin](https://cygwin.com/install.html)
+* `rsync` and `openssl` Cygwin packages
+
+Be sure to select these Cygwin packages when running the Cygwin installer. If you already have Cygwin installed, simply re-run the setup executable and follow the installation prompts to install the necessary packages.
+
+
 ### Step 1: Get Cloudsoft AMP
 
 First, register to ensure that you receive regular updates:
 ```
 http://www.cloudsoft.io/get-started/
 ```
-Then follow the online instructions (reproduced here for simplicity):
+
+If you plan on deploying Hyperledger to external infrastructure, run the install script from this repo:
 ```
-git clone https://github.com/cloudsoft/amp-vagrant
-cd amp-vagrant
+install/install-amp.sh
 ```
 
-If you plan on deploying Hyperledger to external infrastructure, simply run:
+If you plan on deploying Hyperledger to Vagrant VMs running locally, instead run:
 ```
-vagrant up amp
-```
-
-If you plan on deploying Hyperledger to Vagrant VMs running locally, run these commands instead:
-```
-mv servers.yaml servers.yaml.bak
-curl -O https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/servers.yaml
-vagrant up
+install/install-amp-local.sh
 ```
 
-If this is successful Cloudsoft AMP will be available at: [http://10.10.10.100:8081/](http://10.10.10.100:8081/) with "admin" and "password" as the default username and password, respectively.
+If the script runs successfully, Cloudsoft AMP will be available at: [http://10.10.10.100:8081/](http://10.10.10.100:8081/) with "admin" and "password" as the default username and password, respectively.
 For more information about getting AMP running, see [this guide](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html).
 
-Note 1: These steps assume you already have Virtualbox and Vagrant installed on your local machine and have external network access to the Ubuntu update repositories and the Cloudsoft Artifactory server.
+**Note 1**: These steps assume that you have external network access to the Ubuntu update repositories and the Cloudsoft Artifactory server.
 
-Note 2: If you're on Windows, you'll need to run Vagrant from a [Cygwin](https://cygwin.com/install.html) terminal
-with the `rsync` and `openssl` packages installed (be sure to select these packages when running the Cygwin installer).
-If you already have Cygwin installed, simply re-run the setup executable and follow the installation prompts to install
-the necessary packages.
-
+**Note 2**: If you are running on Windows, opening / editing the files in this repo can cause problems due to Windows vs. Unix line endings. If you do open any of the files, be sure that Unix line endings are preserved.
 
 ### Step 2: Create a Deployment Location
 
@@ -107,8 +109,6 @@ to [servers.yaml](servers.yaml).
 This deployment is capable of creating multiple clusters of validating peer nodes across
 different locations, all members of the same Hyperledger Fabric.
 
-Note that this deployment requires multiple locations to be configured.
-
 * Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
 * Click the "+ add application" button
 * Click the "Hyperledger Fabric Multi-cluster" tile
@@ -121,6 +121,8 @@ Note that this deployment requires multiple locations to be configured.
 * Continue adding additional locations to create additional clusters of validating peer nodes
 * Enter a name (optional)
 * Click the "Deploy" button
+
+**Note**: This deployment requires multiple locations to be configured.
 
 
 ## Demo Application Instructions
@@ -149,12 +151,12 @@ Once your cluster has successfully deployed, perform the following steps to depl
 * Copy the `host.sshAddress` value
 * Open up your terminal and run command: `ssh <ssh-address-here>`
 
-Note 1: You may need to supply an SSH key or a username / password depending on your
+**Note 1**: You may need to supply an SSH key or a username / password depending on your
 deployment location's configuration.
 
-Note 2: If `host.sshAddress` ends with a port (e.g. `:22`), remove the colon and the port from the SSH command.
+**Note 2**: If `host.sshAddress` ends with a port (e.g. `:22`), remove the colon and the port from the SSH command.
 
-Note 3: If you deployed to local Vagrant VMs, you can SSH into any of these VMs by running this command instead:
+**Note 3**: If you deployed to local Vagrant VMs, you can SSH into any of these VMs by running this command instead:
 `vagrant ssh byon<number here>`. The name of the VM is based on the last digit of the IP address.
 For example, if the CLI node's IP is `10.10.10.102` then the command would be: `vagrant ssh byon2`.
 
