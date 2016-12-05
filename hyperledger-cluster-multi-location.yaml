@@ -1,9 +1,0 @@
-name: "Hyperledger Fabric Cluster"
-location: multi:(targets="<your-location-1>,<your-location-2>,<your-location-3>")
-
-services:
-- type: hyperledger-cluster
-  name: Hyperledger Fabric Cluster
-  brooklyn.config:
-    dynamiccluster.zone.enable: true
-    initialSize: 4
