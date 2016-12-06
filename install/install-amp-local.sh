@@ -9,7 +9,7 @@ cd amp-vagrant
 
 # Replace servers.yaml file
 mv servers.yaml servers.yaml.bak
-curl -O https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/servers.yaml
+curl -k -O https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/servers.yaml
 
 # Launch AMP and BYON Vagrant VMs
 vagrant up
