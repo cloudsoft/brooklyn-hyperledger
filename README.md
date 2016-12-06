@@ -44,7 +44,11 @@ For more information about getting AMP running, see [this guide](http://docs.clo
 
 **Note 1**: These steps assume that you have external network access to the Ubuntu update repositories and the Cloudsoft Artifactory server.
 
-**Note 2**: If you are running on Windows, opening / editing the files in this repo can cause problems due to Windows vs. Unix line endings. If you do open any of the files, be sure that Unix line endings are preserved.
+**Note 2**: If you are running on Windows and experience the following error (or similar): `/bin/bash^M: bad interpreter: No such file or directory`, it is caused by the presence of Windows line endings (Unix line endings are expected).
+To fix the file in question, run the following command from Cygwin:
+```
+vi <path-to-file> -c 'set ff=unix | wq'
+```
 
 ### Step 2: Create a Deployment Location
 
