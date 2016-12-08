@@ -1,12 +1,12 @@
 # Brooklyn Hyperledger
 
 This repository contains [Apache Brooklyn](https://brooklyn.apache.org/) blueprints for a
-[Hyperledger Fabric](https://github.com/hyperledger/fabric) cluster deployment.
+[Hyperledger Fabric](https://github.com/hyperledger/fabric) v0.6.1 cluster deployment using the official Docker images.
 
 
 ## Deployment Instructions
 
-You can skip Step 1 if you have previously installed Cloudsoft AMP.
+You can skip Steps 0 and 1 if you have previously installed Cloudsoft AMP.
 
 
 ### Step 0: Install Prerequisites
