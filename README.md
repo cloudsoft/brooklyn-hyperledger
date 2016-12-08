@@ -29,6 +29,12 @@ First, register to ensure that you receive regular updates:
 http://www.cloudsoft.io/get-started/
 ```
 
+Then clone this repository:
+```
+git clone https://github.com/cloudsoft/brooklyn-hyperledger.git
+cd brooklyn-hyperledger
+```
+
 If you plan on deploying Hyperledger to external infrastructure, run the install script from this repo:
 ```
 install/install-amp.sh
