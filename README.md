@@ -142,18 +142,23 @@ resources on your local machine using [Vagrant suspend](https://www.vagrantup.co
 To do so, run the following commands from inside this repository:
 ```
 cd install/amp-vagrant
-vagrant suspend byon1 byon2 byon3 byon4 byon5
+vagrant suspend byon1 byon2 byon3 byon4 byon5 amp
 ```
 
 When you'd like to bring your Fabric cluster back up, use [Vagrant resume](https://www.vagrantup.com/docs/cli/resume.html).
 To do so, run the following commands from inside this repository:
 ```
 cd install/amp-vagrant
-vagrant resume byon1 byon2 byon3 byon4 byon5
+vagrant resume amp byon1 byon2 byon3 byon4 byon5
 ```
 
-**Note**: When the the Fabric cluster has been suspended, AMP will show all of the nodes "on fire." This is to be expected,
-since the VMs can no longer be polled by the AMP server; they will return to a normal "green" state when the VMs are resumed.
+**Note 1**: The above commands also suspend / resume the AMP server itself. If you would like to keep AMP running while the Fabric
+cluster is suspended, simply remove the `amp` argument from the `suspend` and `resume` commands.
+
+**Note 2**: Just after the the Fabric cluster has been resumed, AMP will temporarily show all of the nodes as "on fire."
+This is to be expected; once the VMs can be successfully polled by the AMP server they will return to a normal "green" state.
+The "on fire" state will also occur if you suspend the Fabric cluster VMs but leave AMP running, since AMP will not be able to
+poll the suspended VMs.
 
 ## Shutdown Instructions
 
