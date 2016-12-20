@@ -135,6 +135,46 @@ different locations, all members of the same Hyperledger Fabric.
 **Note**: This deployment requires multiple locations to be configured.
 
 
+## Suspension Instructions (Local Vagrant Deployment Only)
+
+If you have deployed your Fabric cluster to Vagrant VMs running locally, you can suspend its operation when not needed to save
+resources on your local machine using [Vagrant suspend](https://www.vagrantup.com/docs/cli/suspend.html).
+To do so, run the following commands from inside this repository:
+```
+cd install/amp-vagrant
+vagrant suspend byon1 byon2 byon3 byon4 byon5
+```
+
+When you'd like to bring your Fabric cluster back up, use [Vagrant resume](https://www.vagrantup.com/docs/cli/resume.html).
+To do so, run the following commands from inside this repository:
+```
+cd install/amp-vagrant
+vagrant resume byon1 byon2 byon3 byon4 byon5
+```
+
+**Note**: When the the Fabric cluster has been suspended, AMP will show all of the nodes "on fire." This is to be expected,
+since the VMs can no longer be polled by the AMP server; they will return to a normal "green" state when the VMs are resumed.
+
+## Shutdown Instructions
+
+If you no longer need your Fabric cluster, AMP can cleanly shut it down and deprovision the previously created infrastructure.
+To shut down your Fabric cluster, from the AMP console:
+
+* Click the "Applications" tab
+* In the list of applications on the left, select the top-level application in the tree (with the name you provided at startup)
+* Click the "Advanced" tab
+* Cick "Expunge" and confirm
+
+### Additional Shutdown Step (Local Vagrant Deployment Only)
+
+If you have deployed your Fabric cluster to Vagrant VMs running locally, you'll need to perform a [Vagrant destroy](https://www.vagrantup.com/docs/cli/destroy.html)
+to remove the VMs. To do so, run the following commands from inside this repository:
+```
+cd install/amp-vagrant
+vagrant destroy -f byon1 byon2 byon3 byon4 byon5
+```
+
+
 ## Demo Application Instructions
 
 Once your cluster has successfully deployed, perform the following steps to deploy the asset management demonstration app.  This app repeatedly assigns an asset "Picasso" from one owner to another.  For more information about this app as well as its source code, see the [Fabric repository](https://github.com/hyperledger/fabric/tree/master/examples/chaincode/go/asset_management).
