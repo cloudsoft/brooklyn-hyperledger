@@ -39,6 +39,10 @@ brooklyn.catalog:
       A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
       validating peer node, and cluster(s) of validating peer nodes running in multiple
       locations.
+    publish:      
+      license_code: Apache-2.0
+      overview: README.md
+    version: 0.9-SNAPSHOT
     name: "Hyperledger Fabric Multi-cluster"
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: entity
@@ -84,6 +88,10 @@ brooklyn.catalog:
       A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
       validating peer node, and cluster(s) of validating peer nodes running in a single
       location.
+    publish:      
+      license_code: Apache-2.0
+      overview: README.md
+    version: 0.9-SNAPSHOT
     name: "Hyperledger Fabric Single-cluster"
     iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
     itemType: entity
