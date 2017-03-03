@@ -1,6 +1,6 @@
 brooklyn.catalog:
-  version: 0.9-SNAPSHOT
-  iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+  version: 0.10-SNAPSHOT
+  icon_url: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
   license_code: Apache-2.0
   license_url: http://www.apache.org/licenses/LICENSE-2.0.txt
   dependsOn:

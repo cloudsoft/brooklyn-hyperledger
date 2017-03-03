@@ -1,99 +1,36 @@
 brooklyn.catalog:
-  version: 0.9-SNAPSHOT
+  version: 0.10-SNAPSHOT
 
   publish:
     description: |
       Entities for running the Hyperledger Fabric project in Apache Brooklyn.
     license_code: Apache-2.0
-    icon_url: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+    icon_url: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
 
   items:
-  - id: hyperledger-fabric-multi-cluster-template
-    description: |
-      A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
-      validating peer node, and cluster(s) of validating peer nodes running in multiple
-      locations.
-    name: "Hyperledger Fabric Multi-cluster"
-    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
-    itemType: template
-    item:
-      services:
-      - type: hyperledger-fabric-multi-cluster-application
-        name: "Hyperledger Fabric Multi-cluster"
-
   - id: hyperledger-fabric-single-cluster-template
     description: |
       A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
       validating peer node, and a single cluster of validating peer nodes running in a
       single location.
     name: "Hyperledger Fabric Single-cluster"
-    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
     itemType: template
     item:
       services:
       - type: hyperledger-fabric-single-cluster-application
         name: "Hyperledger Fabric Single-cluster"
 
-  - id: hyperledger-fabric-multi-cluster-application
-    description: |
-      A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
-      validating peer node, and cluster(s) of validating peer nodes running in multiple
-      locations.
-    publish:      
-      license_code: Apache-2.0
-      overview: README.md
-    version: 0.9-SNAPSHOT
-    name: "Hyperledger Fabric Multi-cluster"
-    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
-    itemType: entity
-    item:
-      type: org.apache.brooklyn.entity.stock.BasicApplication
-
-      brooklyn.parameters:
-      - name: hyperledger.peers.per.location
-        description: |
-          The number of Hyperledger Fabric validating peer nodes to create in each
-          location.
-        type: integer
-        default: 3
-        constraints:
-          - required
-      - name: hyperledger.pbft.request.timeout
-        description: |
-          The number of seconds the PBFT plugin should wait when making requests.
-        type: integer
-        default: 120
-        constraints:
-          - required
-      - name: hyperledger.app.timeout
-        description: |
-          The number of seconds the demo app should wait between deploy, invoke, and query
-          steps.
-        type: integer
-        default: 180
-        constraints:
-          - required
-
-      brooklyn.config:
-        hyperledger.peers.per.location: 3
-        hyperledger.pbft.request.timeout: 120
-        hyperledger.app.timeout: 180
-
-      brooklyn.children:
-      - type: hyperledger-fabric-multi-cluster
-        name: "Hyperledger Fabric Multi-cluster"
-
   - id: hyperledger-fabric-single-cluster-application
     description: |
       A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
       validating peer node, and cluster(s) of validating peer nodes running in a single
       location.
-    publish:      
+    publish:
       license_code: Apache-2.0
       overview: README.md
-    version: 0.9-SNAPSHOT
     name: "Hyperledger Fabric Single-cluster"
-    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
     itemType: entity
     item:
       type: org.apache.brooklyn.entity.stock.BasicApplication
@@ -104,7 +41,7 @@ brooklyn.catalog:
           The number of Hyperledger Fabric validating peer nodes to create in the single
           location.
         type: integer
-        default: 3
+        default: 4
         constraints:
           - required
       - name: hyperledger.pbft.request.timeout
@@ -119,40 +56,18 @@ brooklyn.catalog:
           The number of seconds the demo app should wait between deploy, invoke, and query
           steps.
         type: integer
-        default: 30
+        default: 60
         constraints:
           - required
 
       brooklyn.config:
-        hyperledger.peers.per.location: 3
+        hyperledger.peers.per.location: 4
         hyperledger.pbft.request.timeout: 120
-        hyperledger.app.timeout: 30
+        hyperledger.app.timeout: 60
 
       brooklyn.children:
       - type: hyperledger-fabric-single-cluster
         name: "Hyperledger Fabric Single-cluster"
-
-  - id: hyperledger-fabric-multi-cluster
-    item:
-      name: "Hyperledger Fabric Multi-cluster"
-      type: org.apache.brooklyn.entity.group.DynamicRegionsFabric
-      id: my-hyperledger-fabric-cluster
-
-      memberSpec:
-        $brooklyn:entitySpec:
-          type: hyperledger-vp-cluster
-          name: "Hyperledger Validating Peer Cluster"
-
-      brooklyn.children:
-      - type: hyperledger-services-host
-        name: "Membership Services and CLI Host"
-
-      - type: hyperledger-validating-peer-host
-        id: my-hyperledger-root-node
-        name: "Root Validating Peer Host"
-        brooklyn.config:
-          is.root.node: true
-          launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
 
   - id: hyperledger-fabric-single-cluster
     item:
@@ -160,24 +75,12 @@ brooklyn.catalog:
       type: org.apache.brooklyn.entity.stock.BasicApplication
 
       brooklyn.children:
-      - type: org.apache.brooklyn.entity.group.DynamicRegionsFabric
-        name: "Hyperledger Fabric Single-cluster"
-        id: my-hyperledger-fabric-cluster
-
-        memberSpec:
-          $brooklyn:entitySpec:
-            type: hyperledger-vp-cluster
-            name: "Hyperledger Validating Peer Cluster"
+      - type: hyperledger-vp-cluster
+        name: "Hyperledger Validating Peer Cluster"
+        id: my-hyperledger-fabric-vp-cluster
 
       - type: hyperledger-services-host
         name: "Membership Services and CLI Host"
-
-      - type: hyperledger-validating-peer-host
-        id: my-hyperledger-root-node
-        name: "Root Validating Peer Host"
-        brooklyn.config:
-          is.root.node: true
-          launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
 
   - id: hyperledger-services-host
     description: |
@@ -196,9 +99,6 @@ brooklyn.catalog:
       - type: hyperledger-cli-node
         id: my-hyperledger-cli-node
 
-      - type: hyperledger-sequence-node
-        id: my-hyperledger-sequence-node
-
   - id: hyperledger-membersrvc-node
     description: "A Hyperledger Fabric membership services node"
     itemType: entity
@@ -206,9 +106,6 @@ brooklyn.catalog:
 
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
       name: Membership Services Node
-
-      brooklyn.config:
-        launch.latch: $brooklyn:component("my-hyperledger-sequence-node").attributeWhenReady("service.isUp")
 
       install.command: |
         sudo docker pull hyperledger/fabric-membersrvc:latest
@@ -293,63 +190,25 @@ brooklyn.catalog:
           command: |
             sudo docker exec -i cli bash '-c' 'cd $APP_HOME && go build && ./app' 2>&1
 
-  - id: hyperledger-sequence-node
-    description: "A lightweight HTTP server that issues sequential integer values"
-    itemType: entity
-    item:
-
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: "Sequence Node"
-      id: hyperledger-sequence
-
-      install.command: |
-        sudo yum -y install python net-tools
-
-      post.install.command: |
-        echo "Overriding parent post.install.command with no-op"
-
-      launch.command: |
-        cat > sequence.py <<"END"
-        from BaseHTTPServer import HTTPServer
-        from BaseHTTPServer import BaseHTTPRequestHandler
-
-        sequence = 0
-
-        class MyRequestHandler (BaseHTTPRequestHandler) :
-
-            def do_GET(self) :
-                global sequence
-
-                self.send_response(200)
-                self.send_header("Content-type:", "text/plain")
-                self.wfile.write("\n")
-
-                self.wfile.write(sequence)
-                sequence += 1
-
-        server = HTTPServer(("", 9999), MyRequestHandler)
-
-        server.serve_forever()
-        END
-
-        python sequence.py > sequence.out 2>&1 </dev/null & disown
-        echo $! > $PID_FILE
-
-      checkRunning.command: |
-        sudo netstat -nl | grep 9999
-
-      stop.command: |
-        sudo kill -9 $(cat $PID_FILE)
-
   - id: hyperledger-vp-cluster
     description: "A cluster of Hyperledger Fabric validating peer nodes"
     name: "Hyperledger Fabric Cluster"
-    iconUrl: https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/hyperledger-fabric-icon.png
+    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
     item:
       type: org.apache.brooklyn.entity.group.DynamicCluster
 
       brooklyn.config:
         initialSize: $brooklyn:config("hyperledger.peers.per.location")
+
+      firstMemberSpec:
+        $brooklyn:entitySpec:
+          type: hyperledger-validating-peer-host
+          name: "Root Validating Peer Docker Host"
+          id: my-hyperledger-root-node
+
+          brooklyn.config:
+            is.root.node: true
+            launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
 
       memberSpec:
         $brooklyn:entitySpec:
@@ -390,18 +249,30 @@ brooklyn.catalog:
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
       name: "Validating Peer Node"
 
+      brooklyn.config:
+        hyperledger.peer.id:
+          $brooklyn:formatString:
+            - "vp%d"
+            - $brooklyn:config("cluster.member.id")
+
       shell.env:
         IS_ROOT_NODE: $brooklyn:config("is.root.node")
 
         HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("host.address")
         HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
-        HYPERLEDGER_NUM_NON_ROOT_PEERS: $brooklyn:component("my-hyperledger-fabric-cluster").attributeWhenReady("fabric.size")
+        HYPERLEDGER_CLUSTER_TOTAL_SIZE: $brooklyn:component("my-hyperledger-fabric-vp-cluster").attributeWhenReady("group.members.count")
         HYPERLEDGER_PBFT_REQUEST_TIMEOUT: $brooklyn:config("hyperledger.pbft.request.timeout")
+        HYPERLEDGER_CLUSTER_INDEX: $brooklyn:config("cluster.member.id")
+        HYPERLEDGER_PEER_ID: $brooklyn:config("hyperledger.peer.id")
 
         SECRET_KEYS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("secret.keys")
 
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
-        SEQ_HOST_ADDRESS: $brooklyn:component("my-hyperledger-sequence-node").attributeWhenReady("host.address")
+
+      files.install:
+        "classpath://io.brooklyn.hyperledger:hyperledger/chaincode-request-templates/login-template.json": "login-template.json"
+        "classpath://io.brooklyn.hyperledger:hyperledger/chaincode-request-templates/query-template.json": "query-template.json"
+        "classpath://io.brooklyn.hyperledger:hyperledger/chaincode-request-templates/query-template-security.json": "query-template-security.json"
 
       install.command: |
         sudo docker pull hyperledger/fabric-peer:latest
@@ -412,15 +283,10 @@ brooklyn.catalog:
 
       launch.command: |
         echo $HOST_ADDRESS > host-address
-
-        CLUSTER_INDEX=$(curl http://$SEQ_HOST_ADDRESS:9999/)
-        HYPERLEDGER_PEER_ID=vp$CLUSTER_INDEX
         echo $HYPERLEDGER_PEER_ID > hyperledger.peer.id
 
         IFS=';' read -ra SECRET_KEYS_ARRAY <<< "$SECRET_KEYS"
-        SECRET=${SECRET_KEYS_ARRAY[$CLUSTER_INDEX]}
-
-        HYPERLEDGER_CLUSTER_TOTAL_SIZE=$(($HYPERLEDGER_NUM_NON_ROOT_PEERS + 1))
+        SECRET=${SECRET_KEYS_ARRAY[$HYPERLEDGER_CLUSTER_INDEX]}
 
         # Additional arguments for peer nodes
         if [ $IS_ROOT_NODE == "false" ]; then
@@ -464,15 +330,18 @@ brooklyn.catalog:
           name: "Login User"
           description: "Logs in a registered user"
 
+          shell.env:
+            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+
           command: |
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):7050/registrar
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/login-template.json
-            sed -i "s/ENROLL_ID/${enrollId}/g" body-${timestamp}.json
-            sed -i "s/ENROLL_SECRET/${enrollSecret}/g" body-${timestamp}.json
+            cp ${INSTALL_DIR}/login-template.json login-${timestamp}.json
+            sed -i "s/ENROLL_ID/${enrollId}/g" login-${timestamp}.json
+            sed -i "s/ENROLL_SECRET/${enrollSecret}/g" login-${timestamp}.json
 
-            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
+            curl -H "Content-Type: application/json" -X POST -d @login-${timestamp}.json ${rest_endpoint}
 
           parameters:
             enrollId:
@@ -499,20 +368,23 @@ brooklyn.catalog:
           name: "Query Chaincode"
           description: "Queries an example chaincode"
 
+          shell.env:
+            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+
           command: |
             timestamp=$(date +%s)
             rest_endpoint=http://$(cat host-address):7050/chaincode
 
-            curl -so body-${timestamp}.json https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/chaincode-request-templates/query-template-security.json
-            sed -i "s/METHOD/query/g" body-${timestamp}.json
-            sed -i "s/NAME/${name}/g" body-${timestamp}.json
-            sed -i "s/FUNCTION/${function}/g" body-${timestamp}.json
-            sed -i "s/ARGUMENTS/${args}/g" body-${timestamp}.json
-            sed -i "s/METADATA/${metadata}/g" body-${timestamp}.json
-            sed -i "s/SECURE_CONTEXT/${secureContext}/g" body-${timestamp}.json
-            sed -i "s/TRANSACTION_ID/${timestamp}/g" body-${timestamp}.json
+            cp ${INSTALL_DIR}/query-template-security.json query-${timestamp}-security.json
+            sed -i "s/METHOD/query/g" query-${timestamp}-security.json
+            sed -i "s/NAME/${name}/g" query-${timestamp}-security.json
+            sed -i "s/FUNCTION/${function}/g" query-${timestamp}-security.json
+            sed -i "s/ARGUMENTS/${args}/g" query-${timestamp}-security.json
+            sed -i "s/METADATA/${metadata}/g" query-${timestamp}-security.json
+            sed -i "s/SECURE_CONTEXT/${secureContext}/g" query-${timestamp}-security.json
+            sed -i "s/TRANSACTION_ID/${timestamp}/g" query-${timestamp}-security.json
 
-            curl -H "Content-Type: application/json" -X POST -d @body-${timestamp}.json ${rest_endpoint}
+            curl -H "Content-Type: application/json" -X POST -d @query-${timestamp}-security.json ${rest_endpoint}
 
           parameters:
             name:

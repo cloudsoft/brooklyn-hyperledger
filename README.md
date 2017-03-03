@@ -3,192 +3,80 @@
 This repository contains [Apache Brooklyn](https://brooklyn.apache.org/) blueprints for a
 [Hyperledger Fabric](https://github.com/hyperledger/fabric) v0.6.1 cluster deployment using the official Docker images.
 
-
 ## Deployment Instructions
 
-You can skip Steps 0 and 1 if you have previously installed Cloudsoft AMP.
+### Step 1: Install Cloudsoft AMP
 
-
-### Step 0: Install Prerequisites
-
-* [Git](https://git-scm.com/downloads)
-* [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
-* [Vagrant](https://www.vagrantup.com/downloads.html)
-
-If you are running on Windows, you'll also need:
-* [Cygwin](https://cygwin.com/install.html)
-* `rsync` and `openssl` Cygwin packages
-
-Be sure to select these Cygwin packages when running the Cygwin installer. If you already have Cygwin installed, simply re-run the setup executable and follow the installation prompts to install the necessary packages.
-
-
-### Step 1: Get Cloudsoft AMP
-
-First, register to ensure that you receive regular updates:
+**Note**: If you select the Vagrant installation, replace the following line in the guide below:
 ```
-http://www.cloudsoft.io/get-started/
+git clone https://github.com/cloudsoft/amp-vagrant.git
 ```
 
-Then clone this repository:
+with:
 ```
-git clone https://github.com/cloudsoft/brooklyn-hyperledger.git
-cd brooklyn-hyperledger
-```
-
-If you plan on deploying Hyperledger to external infrastructure, run the install script from this repo:
-```
-install/install-amp.sh
+git clone -b hyperledger-fabric https://github.com/cloudsoft/amp-vagrant.git
 ```
 
-If you plan on deploying Hyperledger to Vagrant VMs running locally, instead run:
-```
-install/install-amp-local.sh
-```
+Use [this guide](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html) to install AMP.
 
-If the script runs successfully, Cloudsoft AMP will be available at: [http://10.10.10.100:8081/](http://10.10.10.100:8081/) with "admin" and "password" as the default username and password, respectively.
-For more information about getting AMP running, see [this guide](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html).
+For the simplest path to a Hyperledger Fabric deployment, select the Vagrant installation option and create
+[5 BYON nodes](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html#starting-byon-nodes).
 
-**Note 1**: These steps assume that you have external network access to the Ubuntu update repositories and the Cloudsoft Artifactory server.
+### Step 1.5: Add Hyperledger Fabric to the AMP Catalog
 
-**Note 2**: If you are running on Windows and experience the following error (or similar): `/bin/bash^M: bad interpreter: No such file or directory`, it is caused by the presence of Windows line endings (Unix line endings are expected).
-To fix the file in question, run the following command from Cygwin:
-```
-vi <path-to-file> -c 'set ff=unix | wq'
-```
+**Note**: You can skip this step if you selected the Vagrant installation option.
+
+* Download the latest release JAR from this repository and place it in the
+`deploy` folder inside the AMP install directory.
+* Browse to the classic view of the AMP user interface (address listed in the installation guide) by appending `/amp-classic-ui/`
+* Click the "Catalog" tab on the top right
+* Click the circular (+) button on the top left
+* Click the "YAML" button
+* Copy and paste the contents of [`hyperledger.bom`](hyperledger.bom) into the editor
+* Click "Add to Catalog"
 
 ### Step 2: Create a Deployment Location
 
-* Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
-* Click the "Catalog" tab
-* Click the circle with a plus sign inside it (next to "Catalog" on the left)
-* Click "Location" under "Add to Catalog"
-* Select the desired type of location and fill in the required fields
+**Note**: You can skip this step if you selected the Vagrant installation option and started the 5 BYON nodes,
+in which case you will already have a location named `byon-cluster` configured and ready to be used.
+If you would like to deploy to a different location, proceed with this step.
 
-Be sure to make note of the "Location ID" that you choose during the final step.
+Use [this guide](http://docs.cloudsoft.io/locations/first-location/index.html) to create a deployment location.
 
-If you plan on deploying to Vagrant VMs running locally, follow
-[this guide](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html#add-a-location)
-to add them as a deployment location. Note that you should include the following IP addresses in the "Hosts" text field:
+### Step 3a: Deploy a Hyperledger Fabric Single-cluster
 
-```
-10.10.10.101
-10.10.10.102
-10.10.10.103
-10.10.10.104
-10.10.10.105
-```
-
-For more information about AMP locations, see this guide's [appendix](#appendix) and
-[the Apache Brooklyn documentation](https://brooklyn.apache.org/v/latest/ops/locations/).
-
-
-### Step 3: Add Hyperledger to the AMP Catalog
-
-* Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
-* Click the "Catalog" tab
-* Click the circle with a plus sign inside it (next to "Catalog" on the left)
-* Click "YAML" under "Add to Catalog"
-* This take you to the Blueprint Composer which should be set to "Catalog" by default
-* Copy and paste:
-```
-brooklyn.catalog:
-  items:
-  - https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/docker.bom
-  - https://raw.githubusercontent.com/cloudsoft/brooklyn-hyperledger/master/catalog.bom
-```
-* Click "Add to Catalog" button
-
-
-### Step 4a: Deploy a Hyperledger Fabric Cluster to One Location
-
-* Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
-* Click the "+ add application" button
-* Click the "Hyperledger Fabric Single-cluster" tile
-* Click the "Next" button
-* Select the location that you previously created from the "Locations" drop-down list
-* Enter a name (optional)
+* Browse to the AMP user interface (address listed in the installation guide)
+* Scroll through the "Quick launch" tile and click "Hyperledger Fabric Single-cluster"
+* Optionally provide a name
+* Provide the location that you created (or `byon-cluster` by default, if using Vagrant)
+* Increase the number of peers if desired
 * Click the "Deploy" button
 
-If you plan on deploying to Vagrant VMs running locally, only deployment to one location is supported
-with a maximum cluster size of 3. However, the size of the cluster can be increased if you add more VMs
-to [servers.yaml](servers.yaml).
+**Note**: If you plan on deploying to Vagrant VMs running locally, the maximum supported value of
+`hyperledger.peers.per.location` is 4. However, the size of the cluster can be increased if you add more VMs
+to [`servers.yaml`](https://github.com/cloudsoft/amp-vagrant/blob/hyperledger-fabric/servers.yaml) in your `amp-vagrant` repository.
 
-
-### Step 4b: Deploy a Hyperledger Fabric Cluster to Multiple Locations
+### Step 3b: Deploy a Hyperledger Fabric Multi-cluster
 
 This deployment is capable of creating multiple clusters of validating peer nodes across
-different locations, all members of the same Hyperledger Fabric.
+multiple locations; all of the nodes are part of the same Hyperledger Fabric.
 
-* Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
+* Browse to the classic view of the AMP user interface (address listed in the installation guide) by appending `/amp-classic-ui/`
 * Click the "+ add application" button
-* Click the "Hyperledger Fabric Multi-cluster" tile
-* Click the "Next" button
-* Select a location from the list -- this is for the membership services and CLI hosts
-* Click "Add Additional Location"
-* Select another location from the list -- this is for the root validating peer node
-* Click "Add Additional Location"
-* Select another location from the list -- this is for a cluster of validating peer nodes
-* Continue adding additional locations to create additional clusters of validating peer nodes
-* Enter a name (optional)
-* Click the "Deploy" button
+* Click the "YAML Composer" button
+* Copy and paste the contents of the [multi-cluster blueprint](examples/hyperledger-multi-cluster.yaml) and add the names of your configured location(s)
 
-**Note**: This deployment requires multiple locations to be configured.
-
-
-## Suspension Instructions (Local Vagrant Deployment Only)
-
-If you have deployed your Fabric cluster to Vagrant VMs running locally, you can suspend its operation when not needed to save
-resources on your local machine using [Vagrant suspend](https://www.vagrantup.com/docs/cli/suspend.html).
-To do so, run the following commands from inside this repository:
-```
-cd install/amp-vagrant
-vagrant suspend byon1 byon2 byon3 byon4 byon5 amp
-```
-
-When you'd like to bring your Fabric cluster back up, use [Vagrant resume](https://www.vagrantup.com/docs/cli/resume.html).
-To do so, run the following commands from inside this repository:
-```
-cd install/amp-vagrant
-vagrant resume amp byon1 byon2 byon3 byon4 byon5
-```
-
-**Note 1**: The above commands also suspend / resume the AMP server itself. If you would like to keep AMP running while the Fabric
-cluster is suspended, simply remove the `amp` argument from the `suspend` and `resume` commands.
-
-**Note 2**: Just after the the Fabric cluster has been resumed, AMP will temporarily show all of the nodes as "on fire."
-This is to be expected; once the VMs can be successfully polled by the AMP server they will return to a normal "green" state.
-The "on fire" state will also occur if you suspend the Fabric cluster VMs but leave AMP running, since AMP will not be able to
-poll the suspended VMs.
-
-## Shutdown Instructions
-
-If you no longer need your Fabric cluster, AMP can cleanly shut it down and deprovision the previously created infrastructure.
-To shut down your Fabric cluster, from the AMP console:
-
-* Click the "Applications" tab
-* In the list of applications on the left, select the top-level application in the tree (with the name you provided at startup)
-* Click the "Advanced" tab
-* Cick "Expunge" and confirm
-
-### Additional Shutdown Step (Local Vagrant Deployment Only)
-
-If you have deployed your Fabric cluster to Vagrant VMs running locally, you'll need to perform a [Vagrant destroy](https://www.vagrantup.com/docs/cli/destroy.html)
-to remove the VMs. To do so, run the following commands from inside this repository:
-```
-cd install/amp-vagrant
-vagrant destroy -f byon1 byon2 byon3 byon4 byon5
-```
-
+**Note**: This deployment requires at least 5 locations listed (can contain duplicates).
 
 ## Demo Application Instructions
 
 Once your cluster has successfully deployed, perform the following steps to deploy the asset management demonstration app.  This app repeatedly assigns an asset "Picasso" from one owner to another.  For more information about this app as well as its source code, see the [Fabric repository](https://github.com/hyperledger/fabric/tree/master/examples/chaincode/go/asset_management).
 
 ### Run Using AMP Effector
-* Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
-* Click on the "Applications" tab
-* Hover over the ">" under "Hyperledger Fabric Application" (or your custom name)
-* Click "Expand All"
+
+* Browse to the AMP user interface (address listed in the installation guide)
+* Click the "App Inspector" tile
+* Hover over the down arrow next to your Hyperledger Fabric cluster and press the listed key combination to "expand all children"
 * Click "CLI Node"
 * Click the "Effectors" tab
 * Click "Invoke" next to "Run Demo Application"
@@ -197,9 +85,9 @@ Once your cluster has successfully deployed, perform the following steps to depl
 
 #### Step 1: SSH into CLI Node
 
-* Go to [http://10.10.10.100:8081/](http://10.10.10.100:8081/) in your browser (the Cloudsoft AMP Console)
-* Click on the "Applications" tab
-* Hover over the ">" under "Hyperledger Fabric Application" (or your custom name)
+* Browse to the AMP user interface (address listed in the installation guide)
+* Click the "App Inspector" tile
+* Hover over the down arrow next to your Hyperledger Fabric cluster and press the listed key combination to "expand all children"
 * Click "Expand All"
 * Click "CLI Node"
 * Click the "Sensors" tab
@@ -215,7 +103,6 @@ deployment location's configuration.
 `vagrant ssh byon<number here>`. The name of the VM is based on the last digit of the IP address.
 For example, if the CLI node's IP is `10.10.10.102` then the command would be: `vagrant ssh byon2`.
 
-
 #### Step 2: Build and Run the Asset Management App
 
 From the same terminal window from the previous step, execute the following commands:
@@ -227,7 +114,6 @@ go build
 ```
 
 This enters the CLI container, builds the app, and executes the app. When the app runs, the output should clearly indicate the transfer of ownership of "Picasso" ultimately ending with "Dave" as the owner.
-
 
 ## Appendix
 
