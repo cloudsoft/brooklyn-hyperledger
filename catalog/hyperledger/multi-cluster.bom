@@ -78,11 +78,11 @@ brooklyn.catalog:
       memberSpec:
         $brooklyn:entitySpec:
           type: hyperledger-vp-cluster-multi
-          name: "Hyperledger Validating Peer Cluster"
+          name: "Validating Peer Cluster"
 
       brooklyn.children:
       - type: hyperledger-services-host-multi
-        name: "Membership Services and CLI Host"
+        name: "Membership Services and Sequence Node Host"
 
       - type: hyperledger-validating-peer-host-multi
         id: my-hyperledger-root-node-multi
@@ -93,20 +93,16 @@ brooklyn.catalog:
 
   - id: hyperledger-services-host-multi
     description: |
-      A Docker host running a Hyperledger Fabric Membership Services node, a CLI node, a
-      sequence node, and the root validating peer node in separate containers.
+      A Docker host running a Hyperledger Fabric Membership Services node and a sequence node.
     itemType: entity
     item:
 
-      name: "Membership Services and CLI Docker Host"
+      name: "Membership Services and Sequence Node Host"
       type: hyperledger-docker-engine
 
       brooklyn.children:
       - type: hyperledger-membersrvc-node-multi
         id: my-hyperledger-membersrvc-node-multi
-
-      - type: hyperledger-cli-node-multi
-        id: my-hyperledger-cli-node-multi
 
       - type: hyperledger-sequence-node
         id: my-hyperledger-sequence-node-multi
@@ -146,6 +142,19 @@ brooklyn.catalog:
           name: secret.keys
           targetType: java.lang.String
           static.value: "MwYpmSRjupbT;5wgHK9qqYaPy;vQelbRvja7cJ;9LKqKH5peurL;Pqh90CEW5juZ;FfdvDkAdY81P;QiXJgHyV4t7A;twoKZouEyLyB;BxP7QNh778gI;wu3F1EwJWHvQ"
+
+  - id: hyperledger-cli-host-multi
+    description: |
+      A Docker host running a Hyperledger Fabric Membership Services CLI node.
+    itemType: entity
+    item:
+
+      name: "CLI Node Host"
+      type: hyperledger-docker-engine
+
+      brooklyn.children:
+      - type: hyperledger-cli-node-multi
+        id: my-hyperledger-cli-node-multi
 
   - id: hyperledger-cli-node-multi
     description: "A Hyperledger Fabric CLI node"
@@ -188,7 +197,7 @@ brooklyn.catalog:
                 sed -i \"s/0.0.0.0/$HYPERLEDGER_ROOT_NODE_ADDRESS/g\" core.yaml; \
                 sed -i \"s/localhost/$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS/g\" core.yaml; \
                 sed -i \"s/30/$HYPERLEDGER_APP_TIMEOUT/g\" app.go; \
-                curl -k -so infiniteloop.sh https://raw.githubusercontent.com/hyperledger/fabric/master/scripts/infiniteloop.sh; \
+                curl -k -so infiniteloop.sh https://raw.githubusercontent.com/hyperledger/fabric/v0.6.1-preview/scripts/infiniteloop.sh; \
                 chmod +x infiniteloop.sh; \
                 ./infiniteloop.sh" >> ~/cli.log 2>&1&
 
@@ -254,9 +263,22 @@ brooklyn.catalog:
         sudo kill -9 $(cat $PID_FILE)
 
   - id: hyperledger-vp-cluster-multi
+    description: "A cluster of Hyperledger Fabric validating peer nodes and a CLI node"
+    name: "Hyperledger Fabric VP Cluster"
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+
+      brooklyn.children:
+      - type: hyperledger-vp-nodes-multi
+        name: "Validating Peer Nodes Cluster"
+
+      - type: hyperledger-cli-host-multi
+        name: "CLI Host"
+
+  - id: hyperledger-vp-nodes-multi
     description: "A cluster of Hyperledger Fabric validating peer nodes"
-    name: "Hyperledger Fabric Cluster"
-    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
+    name: "Hyperledger Fabric VP Cluster"
     item:
       type: org.apache.brooklyn.entity.group.DynamicCluster
 
@@ -305,10 +327,12 @@ brooklyn.catalog:
       shell.env:
         IS_ROOT_NODE: $brooklyn:config("is.root.node")
 
+        FABRIC_GROUP_MEMBERS_COUNT: $brooklyn:component("my-hyperledger-fabric-cluster").attributeWhenReady("group.members.count")
+
         HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("my-hyperledger-root-node-multi").attributeWhenReady("host.address")
         HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:component("my-hyperledger-membersrvc-node-multi").attributeWhenReady("host.address")
-        HYPERLEDGER_NUM_NON_ROOT_PEERS: $brooklyn:component("my-hyperledger-fabric-cluster").attributeWhenReady("fabric.size")
         HYPERLEDGER_PBFT_REQUEST_TIMEOUT: $brooklyn:config("hyperledger.pbft.request.timeout")
+        HYPERLEDGER_PEERS_PER_LOCATION: $brooklyn:config("hyperledger.peers.per.location")
 
         SECRET_KEYS: $brooklyn:component("my-hyperledger-membersrvc-node-multi").attributeWhenReady("secret.keys")
 
@@ -337,7 +361,7 @@ brooklyn.catalog:
         IFS=';' read -ra SECRET_KEYS_ARRAY <<< "$SECRET_KEYS"
         SECRET=${SECRET_KEYS_ARRAY[$CLUSTER_INDEX]}
 
-        HYPERLEDGER_CLUSTER_TOTAL_SIZE=$(($HYPERLEDGER_NUM_NON_ROOT_PEERS + 1))
+        HYPERLEDGER_CLUSTER_TOTAL_SIZE=$((1 + ($FABRIC_GROUP_MEMBERS_COUNT - 2) * $HYPERLEDGER_PEERS_PER_LOCATION))
 
         # Additional arguments for peer nodes
         if [ $IS_ROOT_NODE == "false" ]; then
