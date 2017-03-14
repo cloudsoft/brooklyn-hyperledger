@@ -173,7 +173,7 @@ brooklyn.catalog:
                 sed -i \"s/0.0.0.0/$HYPERLEDGER_ROOT_NODE_ADDRESS/g\" core.yaml; \
                 sed -i \"s/localhost/$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS/g\" core.yaml; \
                 sed -i \"s/30/$HYPERLEDGER_APP_TIMEOUT/g\" app.go; \
-                curl -k -so infiniteloop.sh https://raw.githubusercontent.com/hyperledger/fabric/master/scripts/infiniteloop.sh; \
+                curl -k -so infiniteloop.sh https://raw.githubusercontent.com/hyperledger/fabric/v0.6.1-preview/scripts/infiniteloop.sh; \
                 chmod +x infiniteloop.sh; \
                 ./infiniteloop.sh" >> ~/cli.log 2>&1&
 
