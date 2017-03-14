@@ -64,6 +64,7 @@ brooklyn.catalog:
           - 7057
           - 7058
           - 7059
+          - 8080
           - 9999
 
       childStartMode: foreground_late

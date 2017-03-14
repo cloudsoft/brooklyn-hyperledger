@@ -159,6 +159,7 @@ brooklyn.catalog:
             -i \
             -p 7051:7051 \
             -p 7052:7052 \
+            -p 8080:8080 \
             -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
             -e CORE_PEER_ADDRESS=$HOST_ADDRESS:7051 \
             -e CORE_PEER_ADDRESSAUTODETECT=false \
