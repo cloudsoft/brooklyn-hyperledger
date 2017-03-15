@@ -68,3 +68,81 @@ brooklyn.catalog:
           - 9999
 
       childStartMode: foreground_late
+
+  - id: hyperledger-fabric-composer-node
+    description: "A Hyperledger Fabric Composer CLI installation"
+    itemType: entity
+    item:
+
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: "Fabric Composer Node"
+
+      brooklyn.config:
+        templates.install:
+          "classpath://io.brooklyn.hyperledger:hyperledger/fabric-composer-templates/connection-template.json": "connection.json"
+
+      shell.env:
+        INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+
+      install.command: |
+        sudo yum -y update
+        sudo yum -y install git npm gcc-c++
+        sudo npm install -g composer-cli composer-rest-server
+
+      launch.command: |
+        echo "No-op launch.command"
+
+      checkRunning.command: |
+        which composer
+
+      provisioning.properties:
+        osFamily: centos
+        minRam: 4gb
+        installDevUrandom: true
+        required.ports:
+          - 22
+          - 3000
+
+      brooklyn.initializers:
+      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+        brooklyn.config:
+          name: "Run Getting Started Application"
+          description: "Creates and deploys the business network and runs the Getting Started application"
+
+          shell.env:
+            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+
+          command: |
+            git clone https://github.com/fabric-composer/sample-applications.git
+            cd sample-applications/packages/getting-started
+
+            sed -i 's|    "install": "scripts/download-hyperledger.sh && scripts/start-hyperledger.sh && npm run deployNetwork"||g' package.json
+            sed -i 's|DJY27pEnl16d",|DJY27pEnl16d"|g' package.json
+            npm install || true
+
+            mkdir -p ~/.composer-credentials
+            mkdir -p ~/.composer-connection-profiles/defaultProfile
+
+            sed -i "s|brooklyn-managed-processes||g" ${INSTALL_DIR}/connection.json
+            cp ${INSTALL_DIR}/connection.json ~/.composer-connection-profiles/defaultProfile
+
+            composer archive create --sourceName digitalproperty-network --sourceType module --archiveFile digitalPropertyNetwork.bna
+            composer network deploy --archiveFile digitalPropertyNetwork.bna --enrollId WebAppAdmin --enrollSecret DJY27pEnl16d
+            composer network list -n digitalproperty-network --enrollId WebAppAdmin --enrollSecret DJY27pEnl16d
+
+            npm test
+
+            nohup composer-rest-server -p defaultProfile -n digitalproperty-network -i WebAppAdmin -s DJY27pEnl16d > compose-rest-server.out 2>&1&
+
+      brooklyn.enrichers:
+      - type: org.apache.brooklyn.enricher.stock.Transformer
+        brooklyn.config:
+          uniqueTag: rest-server-address-generator
+          enricher.sourceSensor: $brooklyn:sensor("host.address")
+          enricher.targetSensor: $brooklyn:sensor("example.compose.rest.server.address")
+          enricher.targetValue:
+            $brooklyn:formatString:
+            - "%s:%d%s"
+            - $brooklyn:attributeWhenReady("host.address")
+            - 3000
+            - "/explorer"

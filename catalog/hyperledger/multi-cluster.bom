@@ -78,8 +78,13 @@ brooklyn.catalog:
           is.root.node: true
           launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node-multi").attributeWhenReady("service.isUp")
 
-      - type: hyperledger-fabric-composer-host-multi
-        name: "Fabric Composer Host"
+      - type: hyperledger-fabric-composer-node
+        name: "Fabric Composer Node"
+        brooklyn.config:
+          hyperledger.membersrvc: $brooklyn:component("my-hyperledger-membersrvc-node-multi").attributeWhenReady("host.address")
+          hyperledger.rootnode: $brooklyn:component("my-hyperledger-root-node-multi").attributeWhenReady("host.address")
+
+          launch.latch: $brooklyn:component("my-hyperledger-root-node-multi").attributeWhenReady("service.isUp")
 
   - id: hyperledger-services-host-multi
     description: |
@@ -252,144 +257,6 @@ brooklyn.catalog:
 
       stop.command: |
         sudo kill -9 $(cat $PID_FILE)
-
-  - id: hyperledger-fabric-composer-host-multi
-    description: |
-      A Docker host running with Fabric Composer installed.
-    itemType: entity
-    item:
-
-      name: "Fabric Composer Host"
-      type: hyperledger-docker-engine
-
-      brooklyn.children:
-      - type: hyperledger-fabric-composer-node-multi
-        id: my-hyperledger-fabric-composer-node
-
-  - id: hyperledger-fabric-composer-node-multi
-    description: "A Hyperledger Fabric Composer installation"
-    itemType: entity
-    item:
-
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: "Fabric Composer Node"
-
-      brooklyn.config:
-        hyperledger.membersrvc: $brooklyn:component("my-hyperledger-membersrvc-node-multi").attributeWhenReady("host.address")
-        hyperledger.rootnode: $brooklyn:component("my-hyperledger-root-node-multi").attributeWhenReady("host.address")
-
-        templates.install:
-          "classpath://io.brooklyn.hyperledger:hyperledger/fabric-composer-templates/connection-template.json": "connection.json"
-
-        launch.latch: $brooklyn:component("my-hyperledger-root-node-multi").attributeWhenReady("service.isUp")
-
-      shell.env:
-        INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
-
-      install.command: |
-        sudo yum -y update
-        sudo yum -y install git npm gcc-c++
-        sudo npm install -g composer-cli
-
-        git clone https://github.com/fabric-composer/sample-applications.git
-        cd sample-applications/packages/getting-started
-
-        sed -i 's|    "install": "scripts/download-hyperledger.sh && scripts/start-hyperledger.sh && npm run deployNetwork"||g' package.json
-        sed -i 's|DJY27pEnl16d",|DJY27pEnl16d"|g' package.json
-        npm install || true
-
-        mkdir -p ~/.composer-credentials
-        mkdir -p ~/.composer-connection-profiles/defaultProfile
-
-        sed -i "s|brooklyn-managed-processes||g" ${INSTALL_DIR}/connection.json
-        cp ${INSTALL_DIR}/connection.json ~/.composer-connection-profiles/defaultProfile
-
-      post.install.command: |
-        echo "Overriding parent post.install.command with no-op"
-
-      launch.command: |
-        echo "Overriding parent launch.command with no-op"
-
-      checkRunning.command: |
-        which composer
-
-      brooklyn.initializers:
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: "Create Business Network Archive"
-          description: "Creates a business network archive for the Getting Started application"
-
-          shell.env:
-            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
-
-          command: |
-            cd ${INSTALL_DIR}/sample-applications/packages/getting-started
-            composer archive create --sourceName digitalproperty-network --sourceType module --archiveFile digitalPropertyNetwork.bna
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: "Deploy Business Network"
-          description: "Deploys the Getting Started application business network to the Fabric"
-
-          shell.env:
-            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
-
-          command: |
-            cd ${INSTALL_DIR}/sample-applications/packages/getting-started
-            composer network deploy --archiveFile digitalPropertyNetwork.bna --enrollId WebAppAdmin --enrollSecret DJY27pEnl16d
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: "List Contents of Business Network"
-          description: "Lists the contents of the Getting Started application business network"
-
-          shell.env:
-            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
-
-          command: |
-            cd ${INSTALL_DIR}/sample-applications/packages/getting-started
-            composer network list -n digitalproperty-network --enrollId WebAppAdmin --enrollSecret DJY27pEnl16d
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: "Run Getting Started Application"
-          description: "Runs the example Getting Started appliction"
-
-          shell.env:
-            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
-
-          command: |
-            cd ${INSTALL_DIR}/sample-applications/packages/getting-started
-            npm test
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: "List Assets"
-          description: "List the assets from the Getting Started application asset registry"
-
-          shell.env:
-            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
-
-          command: |
-            cd ${INSTALL_DIR}/sample-applications/packages/getting-started
-            node cli.js landregistry list
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: "All-In-One"
-          description: "Creates and deploys the business network and runs the Getting Started application"
-
-          shell.env:
-            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
-
-          command: |
-            cd ${INSTALL_DIR}/sample-applications/packages/getting-started
-
-            composer archive create --sourceName digitalproperty-network --sourceType module --archiveFile digitalPropertyNetwork.bna
-            composer network deploy --archiveFile digitalPropertyNetwork.bna --enrollId WebAppAdmin --enrollSecret DJY27pEnl16d
-            composer network list -n digitalproperty-network --enrollId WebAppAdmin --enrollSecret DJY27pEnl16d
-
-            npm test
 
   - id: hyperledger-vp-cluster-multi
     description: "A cluster of Hyperledger Fabric validating peer nodes and a CLI node"
