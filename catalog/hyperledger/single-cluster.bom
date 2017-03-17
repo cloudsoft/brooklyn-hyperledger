@@ -59,6 +59,12 @@ brooklyn.catalog:
         default: 60
         constraints:
           - required
+      - name: create.fabric.composer.node
+        label: "Create Fabric Composer Node"
+        description: |
+          Whether a Fabric Composer node will be created alongside the Fabric cluster
+        type: boolean
+        default: false
 
       brooklyn.config:
         hyperledger.peers.per.location: 4
@@ -69,13 +75,19 @@ brooklyn.catalog:
       - type: hyperledger-fabric-single-cluster
         name: "Hyperledger Fabric Cluster"
 
-      - type: hyperledger-fabric-composer-node
-        name: "Fabric Composer Node"
+      - type: org.apache.brooklyn.entity.stock.ConditionalEntity
+        name: "Additional Dev Frameworks"
         brooklyn.config:
-          hyperledger.membersrvc: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
-          hyperledger.rootnode: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("host.address")
+          conditional.entity.create: $brooklyn:config("create.fabric.composer.node")
+          conditional.entity.spec:
+            $brooklyn:entitySpec:
+              type: hyperledger-fabric-composer-node
+              name: "Fabric Composer Node"
+              brooklyn.config:
+                hyperledger.membersrvc: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
+                hyperledger.rootnode: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("host.address")
 
-          launch.latch: $brooklyn:component("my-hyperledger-fabric-vp-cluster").attributeWhenReady("cluster.one_and_all.members.up")
+                launch.latch: $brooklyn:component("my-hyperledger-fabric-vp-cluster").attributeWhenReady("cluster.one_and_all.members.up")
 
   - id: hyperledger-fabric-single-cluster
     item:
