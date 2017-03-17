@@ -108,7 +108,7 @@ brooklyn.catalog:
       name: Membership Services Node
 
       install.command: |
-        sudo docker pull hyperledger/fabric-membersrvc:latest
+        sudo docker pull hyperledger/fabric-membersrvc:x86_64-0.6.1-preview
 
       post.install.command: |
         echo "Overriding parent post.install.command with no-op"
@@ -119,7 +119,7 @@ brooklyn.catalog:
             -i \
             -p 7054:7054 \
             -e CORE_LOGGING_LEVEL=info \
-            hyperledger/fabric-membersrvc:latest membersrvc >> ~/membersrvc.log 2>&1&
+            hyperledger/fabric-membersrvc:x86_64-0.6.1-preview membersrvc >> ~/membersrvc.log 2>&1&
 
       checkRunning.command: |
         STATUS=$(sudo docker inspect -f {{.State.Running}} membersrvc)
@@ -147,8 +147,8 @@ brooklyn.catalog:
         HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
 
       install.command: |
-        sudo docker pull hyperledger/fabric-peer:latest
-        sudo docker tag hyperledger/fabric-peer:latest hyperledger/fabric-baseimage:latest
+        sudo docker pull hyperledger/fabric-peer:x86_64-0.6.1-preview
+        sudo docker tag hyperledger/fabric-peer:x86_64-0.6.1-preview hyperledger/fabric-baseimage:latest
 
       post.install.command: |
         echo "Overriding parent post.install.command with no-op"
@@ -168,7 +168,7 @@ brooklyn.catalog:
             -e HYPERLEDGER_ROOT_NODE_ADDRESS=$HYPERLEDGER_ROOT_NODE_ADDRESS \
             -e HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS \
             -e APP_HOME=/opt/gopath/src/github.com/hyperledger/fabric/examples/chaincode/go/asset_management/app \
-            hyperledger/fabric-peer:latest /bin/bash -c \
+            hyperledger/fabric-peer:x86_64-0.6.1-preview /bin/bash -c \
                 "cd /opt/gopath/src/github.com/hyperledger/fabric/examples/chaincode/go/asset_management/app; \
                 cp /opt/gopath/src/github.com/hyperledger/fabric/peer/core.yaml .; \
                 sed -i \"s/0.0.0.0/$HYPERLEDGER_ROOT_NODE_ADDRESS/g\" core.yaml; \
@@ -276,8 +276,8 @@ brooklyn.catalog:
         "classpath://io.brooklyn.hyperledger:hyperledger/chaincode-request-templates/query-template-security.json": "query-template-security.json"
 
       install.command: |
-        sudo docker pull hyperledger/fabric-peer:latest
-        sudo docker tag hyperledger/fabric-peer:latest hyperledger/fabric-baseimage:latest
+        sudo docker pull hyperledger/fabric-peer:x86_64-0.6.1-preview
+        sudo docker tag hyperledger/fabric-peer:x86_64-0.6.1-preview hyperledger/fabric-baseimage:latest
 
       post.install.command: |
         echo "Overriding parent post.install.command with no-op"
@@ -319,7 +319,7 @@ brooklyn.catalog:
             -e CORE_PBFT_GENERAL_MODE=batch \
             -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_TOTAL_SIZE \
             -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=${HYPERLEDGER_PBFT_REQUEST_TIMEOUT}s \
-            hyperledger/fabric-peer:latest peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
+            hyperledger/fabric-peer:x86_64-0.6.1-preview peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
 
       checkRunning.command: |
         STATUS=$(sudo docker inspect -f {{.State.Running}} $(cat hyperledger.peer.id))
