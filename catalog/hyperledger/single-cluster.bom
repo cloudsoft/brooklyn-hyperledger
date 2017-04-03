@@ -13,13 +13,13 @@ brooklyn.catalog:
       A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
       validating peer node, and a single cluster of validating peer nodes running in a
       single location.
-    name: "Hyperledger Fabric Single-cluster"
+    name: "Hyperledger Fabric Cluster"
     iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
     itemType: template
     item:
       services:
       - type: hyperledger-fabric-single-cluster-application
-        name: "Hyperledger Fabric Single-cluster"
+        name: "Hyperledger Fabric Cluster"
 
   - id: hyperledger-fabric-single-cluster-application
     description: |
@@ -29,7 +29,7 @@ brooklyn.catalog:
     publish:
       license_code: Apache-2.0
       overview: README.md
-    name: "Hyperledger Fabric Single-cluster"
+    name: "Hyperledger Fabric Cluster"
     iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
     itemType: entity
     item:
@@ -67,11 +67,11 @@ brooklyn.catalog:
 
       brooklyn.children:
       - type: hyperledger-fabric-single-cluster
-        name: "Hyperledger Fabric Single-cluster"
+        name: "Hyperledger Fabric Cluster"
 
   - id: hyperledger-fabric-single-cluster
     item:
-      name: "Hyperledger Fabric Single-cluster"
+      name: "Hyperledger Fabric Cluster"
       type: org.apache.brooklyn.entity.stock.BasicApplication
 
       brooklyn.children:

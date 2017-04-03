@@ -1,6 +1,6 @@
 location: <add-location-here>
 services:
-  - type: 'hyperledger-fabric-single-cluster-template'
+  - type: 'hyperledger-fabric-single-cluster-application'
     brooklyn.config:
       hyperledger.peers.per.location: 4
       hyperledger.pbft.request.timeout: 120

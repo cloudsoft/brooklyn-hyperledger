@@ -46,7 +46,7 @@ Use [this guide](http://docs.cloudsoft.io/locations/first-location/index.html) t
 ### Step 3a: Deploy a Hyperledger Fabric Single-cluster
 
 * Browse to the AMP user interface (address listed in the installation guide)
-* Scroll through the "Quick launch" tile and click "Hyperledger Fabric Single-cluster"
+* Scroll through the "Quick launch" tile and click "Hyperledger Fabric Cluster"
 * Optionally provide a name
 * Provide the location that you created (or `byon-cluster` by default, if using Vagrant)
 * Increase the number of peers if desired
