@@ -28,12 +28,11 @@ For the simplest path to a Hyperledger Fabric deployment, select the Vagrant ins
 
 * Download the latest release JAR from this repository and place it in the
 `deploy` folder inside the AMP install directory.
-* Browse to the classic view of the AMP user interface (address listed in the installation guide) by appending `/amp-classic-ui/`
-* Click the "Catalog" tab on the top right
-* Click the circular (+) button on the top left
-* Click the "YAML" button
+* Browse to the AMP user interface (address listed in the installation guide)
+* Click the button with nine small squares on the top right
+* Click "Blueprint importer"
 * Copy and paste the contents of [`hyperledger.bom`](hyperledger.bom) into the editor
-* Click "Add to Catalog"
+* Click "Import" on the bottom right
 
 ### Step 2: Create a Deployment Location
 
@@ -70,7 +69,7 @@ multiple locations; all of the nodes are part of the same Hyperledger Fabric.
 
 ## Demo Application Instructions
 
-Once your cluster has successfully deployed, perform the following steps to deploy the asset management demonstration app.  This app repeatedly assigns an asset "Picasso" from one owner to another.  For more information about this app as well as its source code, see the [Fabric repository](https://github.com/hyperledger/fabric/tree/master/examples/chaincode/go/asset_management).
+Once your cluster has successfully deployed, perform the following steps to deploy the asset management demonstration app.  This app repeatedly assigns an asset "Picasso" from one owner to another.  For more information about this app as well as its source code, see the [Fabric repository](https://github.com/hyperledger/fabric/tree/v0.6.1-preview/examples/chaincode/go/asset_management).
 
 ### Run Using AMP Effector
 
