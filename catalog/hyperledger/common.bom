@@ -113,8 +113,8 @@ brooklyn.catalog:
             INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
 
           command: |
-            git clone https://github.com/fabric-composer/sample-applications.git
-            cd sample-applications/packages/getting-started
+            git clone https://github.com/hyperledger/composer-sample-applications.git
+            cd composer-sample-applications/packages/getting-started
 
             sed -i 's|    "install": "scripts/download-hyperledger.sh && scripts/start-hyperledger.sh && npm run deployNetwork"||g' package.json
             sed -i 's|DJY27pEnl16d",|DJY27pEnl16d"|g' package.json
