@@ -31,19 +31,19 @@ brooklyn.catalog:
 
       brooklyn.children:
       - type: hyperledger-ca-host
-        name: "Hyperledger CA Host"
+        name: "CA Host"
         id: my-hyperledger-ca-host
 
       - type: hyperledger-orderer-host
-        name: "Hyperledger Orderer Host"
+        name: "Orderer Host"
         id: my-hyperledger-orderer-host
 
       - type: hyperledger-peer-host
-        name: "Hyperledger Peer Host"
+        name: "Peer Host"
         id: my-hyperledger-peer-host
 
       - type: hyperledger-cli-host-1-0
-        name: "Hyperledger CLI Host"
+        name: "CLI Host"
         id: my-hyperledger-CLI-host
 
   - id: hyperledger-ca-host
@@ -67,8 +67,12 @@ brooklyn.catalog:
       name: CA Node
 
       install.command: |
-        sudo docker pull hyperledger/fabric-ca:x86_64-1.0.0-alpha2
-        sudo docker tag hyperledger/fabric-ca:x86_64-1.0.0-alpha2 hyperledger/fabric-ca
+        sudo docker pull yeasy/hyperledger-fabric-base:0.9.3 \
+          && sudo docker pull yeasy/hyperledger-fabric-ca:0.9.3
+
+        sudo docker tag yeasy/hyperledger-fabric-ca:0.9.3 hyperledger/fabric-ca:x86_64-1.0.0-alpha2  \
+          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-ccenv:x86_64-1.0.0-preview \
+          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-baseos:x86_64-1.0.0-preview
 
       post.install.command: |
         echo "Overriding parent post.install.command with no-op"
@@ -105,8 +109,12 @@ brooklyn.catalog:
       name: Orderer Node
 
       install.command: |
-        sudo docker pull hyperledger/fabric-orderer:x86_64-1.0.0-alpha2
-        sudo docker tag hyperledger/fabric-orderer:x86_64-1.0.0-alpha2 hyperledger/fabric-orderer
+        sudo docker pull yeasy/hyperledger-fabric-base:0.9.3 \
+          && sudo docker pull yeasy/hyperledger-fabric-orderer:0.9.3
+
+        sudo docker tag yeasy/hyperledger-fabric-orderer:0.9.3 hyperledger/fabric-orderer:x86_64-1.0.0-alpha2  \
+          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-ccenv:x86_64-1.0.0-preview \
+          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-baseos:x86_64-1.0.0-preview
 
       post.install.command: |
         echo "Overriding parent post.install.command with no-op"
@@ -154,11 +162,16 @@ brooklyn.catalog:
         launch.latch: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("service.isUp")
 
       shell.env:
+        HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
         ORDERER_ADDRESS: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("host.address")
 
       install.command: |
-        sudo docker pull hyperledger/fabric-peer:x86_64-1.0.0-alpha2
-        sudo docker tag hyperledger/fabric-peer:x86_64-1.0.0-alpha2 hyperledger/fabric-peer
+        sudo docker pull yeasy/hyperledger-fabric-base:0.9.3 \
+          && sudo docker pull yeasy/hyperledger-fabric-peer:0.9.3
+
+        sudo docker tag yeasy/hyperledger-fabric-peer:0.9.3 hyperledger/fabric-peer:x86_64-1.0.0-alpha2  \
+          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-ccenv:x86_64-1.0.0-preview \
+          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-baseos:x86_64-1.0.0-preview
 
       post.install.command: |
         echo "Overriding parent post.install.command with no-op"
@@ -167,6 +180,7 @@ brooklyn.catalog:
         sudo docker run --name=fabric-peer0 \
             --restart=always \
             -d \
+            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
             -e CORE_PEER_ADDRESSAUTODETECT=false \
             -e CORE_LOGGING_LEVEL=DEBUG \
             -e CORE_NEXT=true \
@@ -178,6 +192,7 @@ brooklyn.catalog:
             -e CORE_PEER_GOSSIP_IGNORESECURITY=true \
             -e CORE_PEER_GOSSIP_SKIPHANDSHAKE=true \
             -e CORE_PEER_ID=peer0 \
+            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:7051 \
             -e CORE_PEER_COMMITTER_LEDGER_ORDERER=$ORDERER_ADDRESS:7050 \
             -p 7050-7059:7050-7059 \
             hyperledger/fabric-peer:x86_64-1.0.0-alpha2 peer node start -o $ORDERER_ADDRESS:7050
@@ -210,11 +225,16 @@ brooklyn.catalog:
         launch.latch: $brooklyn:component("my-hyperledger-peer-node").attributeWhenReady("service.isUp")
 
       shell.env:
+        HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
         PEER_ADDRESS: $brooklyn:component("my-hyperledger-peer-node").attributeWhenReady("host.address")
 
       install.command: |
-        sudo docker pull hyperledger/fabric-peer:x86_64-1.0.0-alpha2
-        sudo docker tag hyperledger/fabric-peer:x86_64-1.0.0-alpha2 hyperledger/fabric-peer
+        sudo docker pull yeasy/hyperledger-fabric-base:0.9.3 \
+          && sudo docker pull yeasy/hyperledger-fabric-peer:0.9.3
+
+        sudo docker tag yeasy/hyperledger-fabric-peer:0.9.3 hyperledger/fabric-peer:x86_64-1.0.0-alpha2  \
+          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-ccenv:x86_64-1.0.0-preview \
+          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-baseos:x86_64-1.0.0-preview
 
       post.install.command: |
         echo "Overriding parent post.install.command with no-op"
@@ -223,6 +243,7 @@ brooklyn.catalog:
         sudo docker run --name=fabric-cli \
             --restart=always \
             -d \
+            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
             -e CORE_PEER_ADDRESSAUTODETECT=false \
             -e CORE_LOGGING_LEVEL=DEBUG \
             -e CORE_NEXT=true \
