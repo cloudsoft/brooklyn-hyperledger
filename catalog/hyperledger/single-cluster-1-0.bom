@@ -1,0 +1,243 @@
+brooklyn.catalog:
+  version: 0.18.0-SNAPSHOT # BROOKLYN_HYPERLEDGER_VERSION
+
+  publish:
+    description: |
+      Entities for running the Hyperledger Fabric project in Apache Brooklyn.
+    license_code: Apache-2.0
+    icon_url: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
+
+  items:
+  - id: hyperledger-fabric-single-cluster-1-0-template
+    description: TODO
+    name: "Hyperledger Fabric 1.0 Cluster"
+    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
+    itemType: template
+    item:
+      services:
+      - type: hyperledger-fabric-single-cluster-1-0-application
+        name: "Hyperledger Fabric 1.0 Cluster"
+
+  - id: hyperledger-fabric-single-cluster-1-0-application
+    description: TODO
+    publish:
+      license_code: Apache-2.0
+      overview: README.md
+    name: "Hyperledger Fabric 1.0 Cluster"
+    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+
+      brooklyn.children:
+      - type: hyperledger-ca-host
+        name: "Hyperledger CA Host"
+        id: my-hyperledger-ca-host
+
+      - type: hyperledger-orderer-host
+        name: "Hyperledger Orderer Host"
+        id: my-hyperledger-orderer-host
+
+      - type: hyperledger-peer-host
+        name: "Hyperledger Peer Host"
+        id: my-hyperledger-peer-host
+
+      - type: hyperledger-cli-host-1-0
+        name: "Hyperledger CLI Host"
+        id: my-hyperledger-CLI-host
+
+  - id: hyperledger-ca-host
+    description: TODO
+    itemType: entity
+    item:
+
+      name: "CA Docker Host"
+      type: hyperledger-docker-engine
+
+      brooklyn.children:
+      - type: hyperledger-ca-node
+        id: my-hyperledger-ca-node
+
+  - id: hyperledger-ca-node
+    description: TODO
+    itemType: entity
+    item:
+
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: CA Node
+
+      install.command: |
+        sudo docker pull hyperledger/fabric-ca:x86_64-1.0.0-alpha2
+        sudo docker tag hyperledger/fabric-ca:x86_64-1.0.0-alpha2 hyperledger/fabric-ca
+
+      post.install.command: |
+        echo "Overriding parent post.install.command with no-op"
+
+      launch.command: |
+        sudo docker run --name=fabric-ca \
+            --restart=always \
+            -d \
+            -p 8888:8888 \
+            hyperledger/fabric-ca:x86_64-1.0.0-alpha2 fabric-ca-server start -b admin:adminpw
+
+      checkRunning.command: |
+        STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-ca)
+        sudo service docker status && [ "${STATUS}" = "true" ]
+
+  - id: hyperledger-orderer-host
+    description: TODO
+    itemType: entity
+    item:
+
+      name: "Orderer Docker Host"
+      type: hyperledger-docker-engine
+
+      brooklyn.children:
+      - type: hyperledger-orderer-node
+        id: my-hyperledger-orderer-node
+
+  - id: hyperledger-orderer-node
+    description: TODO
+    itemType: entity
+    item:
+
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: Orderer Node
+
+      install.command: |
+        sudo docker pull hyperledger/fabric-orderer:x86_64-1.0.0-alpha2
+        sudo docker tag hyperledger/fabric-orderer:x86_64-1.0.0-alpha2 hyperledger/fabric-orderer
+
+      post.install.command: |
+        echo "Overriding parent post.install.command with no-op"
+
+      launch.command: |
+        sudo docker run --name=fabric-orderer0 \
+            --restart=always \
+            -d \
+            -p 7050:7050 \
+            -e ORDERER_GENERAL_LEDGERTYPE=ram \
+            -e ORDERER_GENERAL_BATCHTIMEOUT=10s \
+            -e ORDERER_GENERAL_MAXMESSAGECOUNT=10 \
+            -e ORDERER_GENERAL_MAXWINDOWSIZE=1000 \
+            -e ORDERER_GENERAL_LISTENADDRESS=0.0.0.0 \
+            -e ORDERER_GENERAL_LISTENPORT=7050 \
+            -e ORDERER_RAMLEDGER_HISTORY_SIZE=100 \
+            -e CONFIGTX_ORDERER_ORDERERTYPE=solo \
+            hyperledger/fabric-orderer:x86_64-1.0.0-alpha2 orderer
+
+      checkRunning.command: |
+        STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-orderer0)
+        sudo service docker status && [ "${STATUS}" = "true" ]
+
+  - id: hyperledger-peer-host
+    description: TODO
+    itemType: entity
+    item:
+
+      name: "Peer Docker Host"
+      type: hyperledger-docker-engine
+
+      brooklyn.children:
+      - type: hyperledger-peer-node
+        id: my-hyperledger-peer-node
+
+  - id: hyperledger-peer-node
+    description: TODO
+    itemType: entity
+    item:
+
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: Peer Node
+
+      brooklyn.config:
+        launch.latch: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("service.isUp")
+
+      shell.env:
+        ORDERER_ADDRESS: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("host.address")
+
+      install.command: |
+        sudo docker pull hyperledger/fabric-peer:x86_64-1.0.0-alpha2
+        sudo docker tag hyperledger/fabric-peer:x86_64-1.0.0-alpha2 hyperledger/fabric-peer
+
+      post.install.command: |
+        echo "Overriding parent post.install.command with no-op"
+
+      launch.command: |
+        sudo docker run --name=fabric-peer0 \
+            --restart=always \
+            -d \
+            -e CORE_PEER_ADDRESSAUTODETECT=false \
+            -e CORE_LOGGING_LEVEL=DEBUG \
+            -e CORE_NEXT=true \
+            -e CORE_PEER_ENDORSER_ENABLED=true \
+            -e CORE_PEER_COMMITTER_ENABLED=true \
+            -e CORE_PEER_PROFILE_ENABLED=false \
+            -e CORE_PEER_GOSSIP_ORGLEADER=true \
+            -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
+            -e CORE_PEER_GOSSIP_IGNORESECURITY=true \
+            -e CORE_PEER_GOSSIP_SKIPHANDSHAKE=true \
+            -e CORE_PEER_ID=peer0 \
+            -e CORE_PEER_COMMITTER_LEDGER_ORDERER=$ORDERER_ADDRESS:7050 \
+            -p 7050-7059:7050-7059 \
+            hyperledger/fabric-peer:x86_64-1.0.0-alpha2 peer node start -o $ORDERER_ADDRESS:7050
+
+      checkRunning.command: |
+        STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-peer0)
+        sudo service docker status && [ "${STATUS}" = "true" ]
+
+  - id: hyperledger-cli-host-1-0
+    description: TODO
+    itemType: entity
+    item:
+
+      name: "CLI Docker Host"
+      type: hyperledger-docker-engine
+
+      brooklyn.children:
+      - type: hyperledger-cli-node-1-0
+        id: my-hyperledger-cli-node
+
+  - id: hyperledger-cli-node-1-0
+    description: TODO
+    itemType: entity
+    item:
+
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: CLI Node
+
+      brooklyn.config:
+        launch.latch: $brooklyn:component("my-hyperledger-peer-node").attributeWhenReady("service.isUp")
+
+      shell.env:
+        PEER_ADDRESS: $brooklyn:component("my-hyperledger-peer-node").attributeWhenReady("host.address")
+
+      install.command: |
+        sudo docker pull hyperledger/fabric-peer:x86_64-1.0.0-alpha2
+        sudo docker tag hyperledger/fabric-peer:x86_64-1.0.0-alpha2 hyperledger/fabric-peer
+
+      post.install.command: |
+        echo "Overriding parent post.install.command with no-op"
+
+      launch.command: |
+        sudo docker run --name=fabric-cli \
+            --restart=always \
+            -d \
+            -e CORE_PEER_ADDRESSAUTODETECT=false \
+            -e CORE_LOGGING_LEVEL=DEBUG \
+            -e CORE_NEXT=true \
+            -e CORE_PEER_ENDORSER_ENABLED=true \
+            -e CORE_PEER_COMMITTER_ENABLED=true \
+            -e CORE_PEER_PROFILE_ENABLED=false \
+            -e CORE_PEER_GOSSIP_ORGLEADER=false \
+            -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
+            -e CORE_PEER_GOSSIP_IGNORESECURITY=true \
+            -e CORE_PEER_GOSSIP_SKIPHANDSHAKE=true \
+            -e CORE_PEER_ID=cli \
+            -e CORE_PEER_ADDRESS=$PEER_ADDRESS:7051 \
+            -p 7050-7059:7050-7059 \
+            hyperledger/fabric-peer:x86_64-1.0.0-alpha2 bash -c 'while true; do sleep 20170504; done'
+
+      checkRunning.command: |
+        STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-cli)
+        sudo service docker status && [ "${STATUS}" = "true" ]

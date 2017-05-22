@@ -17,7 +17,7 @@ brooklyn.catalog:
       type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
 
       install.command: |
-        sudo yum -y update
+        # sudo yum -y update
         sudo tee /etc/yum.repos.d/docker.repo <<-'EOF'
         [dockerrepo]
         name=Docker Repository
@@ -65,6 +65,7 @@ brooklyn.catalog:
           - 7058
           - 7059
           - 8080
+          - 8888
           - 9999
 
       childStartMode: foreground_late

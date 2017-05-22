@@ -169,6 +169,11 @@
                                     <classifier>multi-cluster</classifier>
                                 </artifact>
                                 <artifact>
+                                    <file>${project.basedir}/catalog/hyperledger/single-cluster-1-0.bom</file>
+                                    <type>bom</type>
+                                    <classifier>single-cluster-1-0</classifier>
+                                </artifact>
+                                <artifact>
                                     <file>${project.build.outputDirectory}/feature.xml</file>
                                     <type>xml</type>
                                     <classifier>features</classifier>
