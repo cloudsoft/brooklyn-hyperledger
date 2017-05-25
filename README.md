@@ -60,10 +60,10 @@ to [`servers.yaml`](https://github.com/cloudsoft/amp-vagrant/blob/hyperledger-fa
 This deployment is capable of creating multiple clusters of validating peer nodes across
 multiple locations; all of the nodes are part of the same Hyperledger Fabric.
 
-* Browse to the classic view of the AMP user interface (address listed in the installation guide) by appending `/amp-classic-ui/`
-* Click the "+ add application" button
-* Click the "YAML Composer" button
-* Copy and paste the contents of the [multi-cluster blueprint](examples/hyperledger-multi-cluster.yaml) and add the names of your configured location(s)
+* Download the Brooklyn CLI using [this guide](https://brooklyn.apache.org/v/latest/ops/cli/)
+* Login to your AMP server with the CLI using [this guide](https://brooklyn.apache.org/v/latest/ops/cli/cli-usage-guide.html#login)
+* Copy and paste the contents of the [multi-cluster blueprint](examples/hyperledger-multi-cluster.yaml) into an editor, add the names of your configured location(s), and save the modified file to disk
+* Deploy the blueprint with the CLI using [this guide](https://brooklyn.apache.org/v/latest/ops/cli/cli-usage-guide.html#applications) -- `webapp-policy.yaml` should be replaced with the path to your blueprint file on disk
 
 **Note**: This deployment requires at least 5 locations listed (can contain duplicates).
 
