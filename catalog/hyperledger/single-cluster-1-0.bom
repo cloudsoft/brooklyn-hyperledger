@@ -119,6 +119,8 @@ brooklyn.catalog:
               brooklyn.config:
                 is.leader.node: true
                 launch.latch: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("service.isUp")
+                post.launch.command: |
+                  sudo docker pull hyperledger/fabric-ccenv:x86_64-1.0.0-alpha2
 
           memberSpec:
             $brooklyn:entitySpec:
@@ -223,8 +225,13 @@ brooklyn.catalog:
                 -e CORE_PEER_GOSSIP_SKIPHANDSHAKE=true \
                 -e CORE_PEER_ID=cli \
                 -e CORE_PEER_ADDRESS=$PEER_ADDRESS:7051 \
+                -e GOPATH=/opt/golang \
                 -p 7050-7059:7050-7059 \
                 hyperledger/fabric-peer:x86_64-1.0.0-alpha2 bash -c 'while true; do sleep 20170504; done'
+
+          post.launch.command: |
+            sudo docker exec fabric-cli bash -c \
+              'apt-get -y update && apt-get -y install golang git && mkdir /opt/golang'
 
           checkRunning.command: |
             STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-cli)
