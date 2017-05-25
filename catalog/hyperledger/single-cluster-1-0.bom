@@ -4,303 +4,228 @@ brooklyn.catalog:
   publish:
     description: |
       Entities for running the Hyperledger Fabric project in Apache Brooklyn.
-    license_code: Apache-2.0
+    license_code: APACHE-2.0
     icon_url: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
 
   items:
-  - id: hyperledger-fabric-single-cluster-1-0-template
-    description: TODO
-    name: "Hyperledger Fabric 1.0 Cluster"
-    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
-    itemType: template
-    item:
-      services:
-      - type: hyperledger-fabric-single-cluster-1-0-application
-        name: "Hyperledger Fabric 1.0 Cluster"
+    - id: hyperledger-fabric-single-cluster-1-0-application
+      name: "Hyperledger Fabric 1.0 Cluster"
+      iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.stock.BasicApplication
 
-  - id: hyperledger-fabric-single-cluster-1-0-application
-    description: TODO
-    publish:
-      license_code: Apache-2.0
-      overview: README.md
-    name: "Hyperledger Fabric 1.0 Cluster"
-    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
-    itemType: entity
-    item:
-      type: org.apache.brooklyn.entity.stock.BasicApplication
+        brooklyn.parameters:
+          - name: hyperledger.num.peers
+            description: "TODO"
+            type: integer
+            default: 2
+            constraints:
+              - required
 
-      brooklyn.parameters:
-      - name: hyperledger.num.peers
-        description: "TODO"
-        type: integer
-        default: 2
-        constraints:
-          - required
+        brooklyn.children:
+          - type: hyperledger-ca-host
+            name: "CA Host"
+            id: my-hyperledger-ca-host
+          - type: hyperledger-orderer-host
+            name: "Orderer Host"
+            id: my-hyperledger-orderer-host
+          - type: hyperledger-peer-cluster
+            name: "Peer Cluster"
+            id: my-hyperledger-peer-cluster
+          - type: hyperledger-cli-host-1-0
+            name: "CLI Host"
+            id: my-hyperledger-CLI-host
 
-      brooklyn.children:
-      - type: hyperledger-ca-host
-        name: "CA Host"
-        id: my-hyperledger-ca-host
+    - id: hyperledger-ca-host
+      itemType: entity
+      item:
+        name: "CA Docker Host"
+        type: hyperledger-docker-engine
 
-      - type: hyperledger-orderer-host
-        name: "Orderer Host"
-        id: my-hyperledger-orderer-host
+        brooklyn.children:
+          - type: hyperledger-ca-node
+            id: my-hyperledger-ca-node
 
-      - type: hyperledger-peer-cluster
-        name: "Peer Cluster"
-        id: my-hyperledger-peer-cluster
+    - id: hyperledger-ca-node
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        name: CA Node
 
-      - type: hyperledger-cli-host-1-0
-        name: "CLI Host"
-        id: my-hyperledger-CLI-host
+        brooklyn.config:
+          launch.command: |
+            sudo docker run --name=fabric-ca \
+                --restart=always \
+                -d \
+                -p 8888:8888 \
+                hyperledger/fabric-ca:x86_64-1.0.0-alpha2 fabric-ca-server start -b admin:adminpw
 
-  - id: hyperledger-ca-host
-    description: TODO
-    itemType: entity
-    item:
+          checkRunning.command: |
+            STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-ca)
+            sudo service docker status && [ "${STATUS}" = "true" ]
 
-      name: "CA Docker Host"
-      type: hyperledger-docker-engine
+    - id: hyperledger-orderer-host
+      itemType: entity
+      item:
+        name: "Orderer Docker Host"
+        type: hyperledger-docker-engine
 
-      brooklyn.children:
-      - type: hyperledger-ca-node
-        id: my-hyperledger-ca-node
+        brooklyn.children:
+          - type: hyperledger-orderer-node
+            id: my-hyperledger-orderer-node
 
-  - id: hyperledger-ca-node
-    description: TODO
-    itemType: entity
-    item:
+    - id: hyperledger-orderer-node
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        name: Orderer Node
 
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: CA Node
+        brooklyn.config:
+          launch.command: |
+            sudo docker run --name=fabric-orderer0 \
+                --restart=always \
+                -d \
+                -p 7050:7050 \
+                -e ORDERER_GENERAL_LEDGERTYPE=ram \
+                -e ORDERER_GENERAL_BATCHTIMEOUT=10s \
+                -e ORDERER_GENERAL_MAXMESSAGECOUNT=10 \
+                -e ORDERER_GENERAL_MAXWINDOWSIZE=1000 \
+                -e ORDERER_GENERAL_LISTENADDRESS=0.0.0.0 \
+                -e ORDERER_GENERAL_LISTENPORT=7050 \
+                -e ORDERER_RAMLEDGER_HISTORY_SIZE=100 \
+                -e CONFIGTX_ORDERER_ORDERERTYPE=solo \
+                hyperledger/fabric-orderer:x86_64-1.0.0-alpha2 orderer
 
-      install.command: |
-        sudo docker pull yeasy/hyperledger-fabric-base:0.9.3 \
-          && sudo docker pull yeasy/hyperledger-fabric-ca:0.9.3
+          checkRunning.command: |
+            STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-orderer0)
+            sudo service docker status && [ "${STATUS}" = "true" ]
 
-        sudo docker tag yeasy/hyperledger-fabric-ca:0.9.3 hyperledger/fabric-ca:x86_64-1.0.0-alpha2  \
-          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-ccenv:x86_64-1.0.0-preview \
-          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-baseos:x86_64-1.0.0-preview
+    - id: hyperledger-peer-cluster
+      name: "Peer Cluster"
+      iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
+      item:
+        type: org.apache.brooklyn.entity.group.DynamicCluster
 
-      post.install.command: |
-        echo "Overriding parent post.install.command with no-op"
+        brooklyn.config:
+          initialSize: $brooklyn:config("hyperledger.num.peers")
 
-      launch.command: |
-        sudo docker run --name=fabric-ca \
-            --restart=always \
-            -d \
-            -p 8888:8888 \
-            hyperledger/fabric-ca:x86_64-1.0.0-alpha2 fabric-ca-server start -b admin:adminpw
+          firstMemberSpec:
+            $brooklyn:entitySpec:
+              type: hyperledger-peer-host
+              name: "Leader Peer Docker Host"
+              id: my-hyperledger-leader-node
 
-      checkRunning.command: |
-        STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-ca)
-        sudo service docker status && [ "${STATUS}" = "true" ]
+              brooklyn.config:
+                is.leader.node: true
+                launch.latch: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("service.isUp")
 
-  - id: hyperledger-orderer-host
-    description: TODO
-    itemType: entity
-    item:
+          memberSpec:
+            $brooklyn:entitySpec:
+              type: hyperledger-peer-host
+              name: "Peer Docker Host"
 
-      name: "Orderer Docker Host"
-      type: hyperledger-docker-engine
+              brooklyn.config:
+                is.leader.node: false
+                launch.latch: $brooklyn:component("my-hyperledger-leader-node").attributeWhenReady("service.isUp")
 
-      brooklyn.children:
-      - type: hyperledger-orderer-node
-        id: my-hyperledger-orderer-node
+    - id: hyperledger-peer-host
+      itemType: entity
+      item:
+        name: "Peer Docker Host"
+        type: hyperledger-docker-engine
 
-  - id: hyperledger-orderer-node
-    description: TODO
-    itemType: entity
-    item:
+        brooklyn.children:
+          - type: hyperledger-peer-node
+            id: my-hyperledger-peer-node
 
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: Orderer Node
+    - id: hyperledger-peer-node
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        name: Peer Node
 
-      install.command: |
-        sudo docker pull yeasy/hyperledger-fabric-base:0.9.3 \
-          && sudo docker pull yeasy/hyperledger-fabric-orderer:0.9.3
+        brooklyn.config:
+          shell.env:
+            IS_LEADER_NODE: $brooklyn:config("is.leader.node")
 
-        sudo docker tag yeasy/hyperledger-fabric-orderer:0.9.3 hyperledger/fabric-orderer:x86_64-1.0.0-alpha2  \
-          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-ccenv:x86_64-1.0.0-preview \
-          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-baseos:x86_64-1.0.0-preview
+            HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+            ORDERER_ADDRESS: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("host.address")
+            LEADER_ADDRESS: $brooklyn:component("my-hyperledger-leader-node").attributeWhenReady("host.address")
 
-      post.install.command: |
-        echo "Overriding parent post.install.command with no-op"
+            ID: $brooklyn:config("cluster.member.id")
 
-      launch.command: |
-        sudo docker run --name=fabric-orderer0 \
-            --restart=always \
-            -d \
-            -p 7050:7050 \
-            -e ORDERER_GENERAL_LEDGERTYPE=ram \
-            -e ORDERER_GENERAL_BATCHTIMEOUT=10s \
-            -e ORDERER_GENERAL_MAXMESSAGECOUNT=10 \
-            -e ORDERER_GENERAL_MAXWINDOWSIZE=1000 \
-            -e ORDERER_GENERAL_LISTENADDRESS=0.0.0.0 \
-            -e ORDERER_GENERAL_LISTENPORT=7050 \
-            -e ORDERER_RAMLEDGER_HISTORY_SIZE=100 \
-            -e CONFIGTX_ORDERER_ORDERERTYPE=solo \
-            hyperledger/fabric-orderer:x86_64-1.0.0-alpha2 orderer
+          launch.command: |
+            sudo docker run --name=fabric-peer$ID \
+                --restart=always \
+                -d \
+                -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
+                -e CORE_PEER_ADDRESSAUTODETECT=false \
+                -e CORE_LOGGING_LEVEL=DEBUG \
+                -e CORE_NEXT=true \
+                -e CORE_PEER_ENDORSER_ENABLED=true \
+                -e CORE_PEER_COMMITTER_ENABLED=true \
+                -e CORE_PEER_PROFILE_ENABLED=false \
+                -e CORE_PEER_GOSSIP_ORGLEADER=$IS_LEADER_NODE \
+                -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
+                -e CORE_PEER_GOSSIP_IGNORESECURITY=true \
+                -e CORE_PEER_GOSSIP_SKIPHANDSHAKE=true \
+                -e CORE_PEER_ID=peer$ID \
+                -e CORE_PEER_ADDRESS=$HOST_ADDRESS:7051 \
+                -e CORE_PEER_COMMITTER_LEDGER_ORDERER=$ORDERER_ADDRESS:7050 \
+                -e CORE_PEER_GOSSIP_BOOTSTRAP=$LEADER_ADDRESS:7051 \
+                -e CORE_PEER_GOSSIP_EXTERNALENDPOINT=$HOST_ADDRESS:7051 \
+                -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
+                -p 7050-7059:7050-7059 \
+                hyperledger/fabric-peer:x86_64-1.0.0-alpha2 peer node start -o $ORDERER_ADDRESS:7050
 
-      checkRunning.command: |
-        STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-orderer0)
-        sudo service docker status && [ "${STATUS}" = "true" ]
+          checkRunning.command: |
+            STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-peer$ID)
+            sudo service docker status && [ "${STATUS}" = "true" ]
 
-  - id: hyperledger-peer-cluster
-    description: "TODO"
-    name: "Peer Cluster"
-    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
-    item:
-      type: org.apache.brooklyn.entity.group.DynamicCluster
+    - id: hyperledger-cli-host-1-0
+      itemType: entity
+      item:
+        name: "CLI Docker Host"
+        type: hyperledger-docker-engine
 
-      brooklyn.config:
-        initialSize: $brooklyn:config("hyperledger.num.peers")
+        brooklyn.children:
+          - type: hyperledger-cli-node-1-0
+            id: my-hyperledger-cli-node
 
-      firstMemberSpec:
-        $brooklyn:entitySpec:
-          type: hyperledger-peer-host
-          name: "Leader Peer Docker Host"
-          id: my-hyperledger-leader-node
+    - id: hyperledger-cli-node-1-0
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        name: CLI Node
 
-          brooklyn.config:
-            is.leader.node: true
-            launch.latch: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("service.isUp")
+        brooklyn.config:
+          launch.latch: $brooklyn:component("my-hyperledger-peer-cluster").attributeWhenReady("cluster.one_and_all.members.up")
 
-      memberSpec:
-        $brooklyn:entitySpec:
-          type: hyperledger-peer-host
-          name: "Peer Docker Host"
+          shell.env:
+            HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+            PEER_ADDRESS: $brooklyn:component("my-hyperledger-leader-node").attributeWhenReady("host.address")
 
-          brooklyn.config:
-            is.leader.node: false
-            launch.latch: $brooklyn:component("my-hyperledger-leader-node").attributeWhenReady("service.isUp")
+          launch.command: |
+            sudo docker run --name=fabric-cli \
+                --restart=always \
+                -d \
+                -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
+                -e CORE_PEER_ADDRESSAUTODETECT=false \
+                -e CORE_LOGGING_LEVEL=DEBUG \
+                -e CORE_NEXT=true \
+                -e CORE_PEER_ENDORSER_ENABLED=true \
+                -e CORE_PEER_COMMITTER_ENABLED=true \
+                -e CORE_PEER_PROFILE_ENABLED=false \
+                -e CORE_PEER_GOSSIP_ORGLEADER=false \
+                -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
+                -e CORE_PEER_GOSSIP_IGNORESECURITY=true \
+                -e CORE_PEER_GOSSIP_SKIPHANDSHAKE=true \
+                -e CORE_PEER_ID=cli \
+                -e CORE_PEER_ADDRESS=$PEER_ADDRESS:7051 \
+                -p 7050-7059:7050-7059 \
+                hyperledger/fabric-peer:x86_64-1.0.0-alpha2 bash -c 'while true; do sleep 20170504; done'
 
-  - id: hyperledger-peer-host
-    description: TODO
-    itemType: entity
-    item:
-
-      name: "Peer Docker Host"
-      type: hyperledger-docker-engine
-
-      brooklyn.children:
-      - type: hyperledger-peer-node
-        id: my-hyperledger-peer-node
-
-  - id: hyperledger-peer-node
-    description: TODO
-    itemType: entity
-    item:
-
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: Peer Node
-
-      shell.env:
-        IS_LEADER_NODE: $brooklyn:config("is.leader.node")
-
-        HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
-        ORDERER_ADDRESS: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("host.address")
-        LEADER_ADDRESS: $brooklyn:component("my-hyperledger-leader-node").attributeWhenReady("host.address")
-
-        ID: $brooklyn:config("cluster.member.id")
-
-      install.command: |
-        sudo docker pull yeasy/hyperledger-fabric-base:0.9.3 \
-          && sudo docker pull yeasy/hyperledger-fabric-peer:0.9.3
-
-        sudo docker tag yeasy/hyperledger-fabric-peer:0.9.3 hyperledger/fabric-peer:x86_64-1.0.0-alpha2  \
-          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-ccenv:x86_64-1.0.0-preview \
-          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-baseos:x86_64-1.0.0-preview
-
-      post.install.command: |
-        echo "Overriding parent post.install.command with no-op"
-
-      launch.command: |
-        sudo docker run --name=fabric-peer$ID \
-            --restart=always \
-            -d \
-            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-            -e CORE_PEER_ADDRESSAUTODETECT=false \
-            -e CORE_LOGGING_LEVEL=DEBUG \
-            -e CORE_NEXT=true \
-            -e CORE_PEER_ENDORSER_ENABLED=true \
-            -e CORE_PEER_COMMITTER_ENABLED=true \
-            -e CORE_PEER_PROFILE_ENABLED=false \
-            -e CORE_PEER_GOSSIP_ORGLEADER=$IS_LEADER_NODE \
-            -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
-            -e CORE_PEER_GOSSIP_IGNORESECURITY=true \
-            -e CORE_PEER_GOSSIP_SKIPHANDSHAKE=true \
-            -e CORE_PEER_ID=peer$ID \
-            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:7051 \
-            -e CORE_PEER_COMMITTER_LEDGER_ORDERER=$ORDERER_ADDRESS:7050 \
-            -e CORE_PEER_GOSSIP_BOOTSTRAP=$LEADER_ADDRESS:7051 \
-            -e CORE_PEER_GOSSIP_EXTERNALENDPOINT=$HOST_ADDRESS:7051 \
-            -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
-            -p 7050-7059:7050-7059 \
-            hyperledger/fabric-peer:x86_64-1.0.0-alpha2 peer node start -o $ORDERER_ADDRESS:7050
-
-      checkRunning.command: |
-        STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-peer$ID)
-        sudo service docker status && [ "${STATUS}" = "true" ]
-
-  - id: hyperledger-cli-host-1-0
-    description: TODO
-    itemType: entity
-    item:
-
-      name: "CLI Docker Host"
-      type: hyperledger-docker-engine
-
-      brooklyn.children:
-      - type: hyperledger-cli-node-1-0
-        id: my-hyperledger-cli-node
-
-  - id: hyperledger-cli-node-1-0
-    description: TODO
-    itemType: entity
-    item:
-
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: CLI Node
-
-      brooklyn.config:
-        launch.latch: $brooklyn:component("my-hyperledger-peer-cluster").attributeWhenReady("cluster.one_and_all.members.up")
-
-      shell.env:
-        HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
-        PEER_ADDRESS: $brooklyn:component("my-hyperledger-leader-node").attributeWhenReady("host.address")
-
-      install.command: |
-        sudo docker pull yeasy/hyperledger-fabric-base:0.9.3 \
-          && sudo docker pull yeasy/hyperledger-fabric-peer:0.9.3
-
-        sudo docker tag yeasy/hyperledger-fabric-peer:0.9.3 hyperledger/fabric-peer:x86_64-1.0.0-alpha2  \
-          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-ccenv:x86_64-1.0.0-preview \
-          && sudo docker tag yeasy/hyperledger-fabric-base:0.9.3 hyperledger/fabric-baseos:x86_64-1.0.0-preview
-
-      post.install.command: |
-        echo "Overriding parent post.install.command with no-op"
-
-      launch.command: |
-        sudo docker run --name=fabric-cli \
-            --restart=always \
-            -d \
-            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-            -e CORE_PEER_ADDRESSAUTODETECT=false \
-            -e CORE_LOGGING_LEVEL=DEBUG \
-            -e CORE_NEXT=true \
-            -e CORE_PEER_ENDORSER_ENABLED=true \
-            -e CORE_PEER_COMMITTER_ENABLED=true \
-            -e CORE_PEER_PROFILE_ENABLED=false \
-            -e CORE_PEER_GOSSIP_ORGLEADER=false \
-            -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
-            -e CORE_PEER_GOSSIP_IGNORESECURITY=true \
-            -e CORE_PEER_GOSSIP_SKIPHANDSHAKE=true \
-            -e CORE_PEER_ID=cli \
-            -e CORE_PEER_ADDRESS=$PEER_ADDRESS:7051 \
-            -p 7050-7059:7050-7059 \
-            hyperledger/fabric-peer:x86_64-1.0.0-alpha2 bash -c 'while true; do sleep 20170504; done'
-
-      checkRunning.command: |
-        STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-cli)
-        sudo service docker status && [ "${STATUS}" = "true" ]
+          checkRunning.command: |
+            STATUS=$(sudo docker inspect -f {{.State.Running}} fabric-cli)
+            sudo service docker status && [ "${STATUS}" = "true" ]
