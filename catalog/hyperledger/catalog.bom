@@ -1,5 +1,5 @@
 brooklyn.catalog:
   items:
-    - classpath://io.brooklyn.hyperledger:hyperledger/common.bom
-    - classpath://io.brooklyn.hyperledger:hyperledger/single-cluster.bom
-    - classpath://io.brooklyn.hyperledger:hyperledger/multi-cluster.bom
+    - classpath://hyperledger/common.bom
+    - classpath://hyperledger/single-cluster.bom
+    - classpath://hyperledger/multi-cluster.bom
