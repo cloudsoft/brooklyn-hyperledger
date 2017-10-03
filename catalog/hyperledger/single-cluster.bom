@@ -209,7 +209,7 @@ brooklyn.catalog:
 
           brooklyn.config:
             is.root.node: true
-            launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
+            latch.launch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
 
       memberSpec:
         $brooklyn:entitySpec:
@@ -218,7 +218,7 @@ brooklyn.catalog:
 
           brooklyn.config:
             is.root.node: false
-            launch.latch: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("service.isUp")
+            latch.launch: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("service.isUp")
 
       brooklyn.enrichers:
       - type: org.apache.brooklyn.enricher.stock.Aggregator
