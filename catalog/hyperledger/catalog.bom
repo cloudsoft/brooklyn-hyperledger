@@ -3,4 +3,3 @@ brooklyn.catalog:
     - classpath://io.brooklyn.hyperledger:hyperledger/common.bom
     - classpath://io.brooklyn.hyperledger:hyperledger/single-cluster.bom
     - classpath://io.brooklyn.hyperledger:hyperledger/multi-cluster.bom
-    - classpath://io.brooklyn.hyperledger:hyperledger/single-cluster-1-0.bom

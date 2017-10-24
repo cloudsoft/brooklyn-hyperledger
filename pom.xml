@@ -6,7 +6,7 @@
     <groupId>io.brooklyn.hyperledger</groupId>
     <artifactId>hyperledger</artifactId>
     <packaging>bundle</packaging>
-    <version>0.18.0-SNAPSHOT</version> <!-- BROOKLYN_HYPERLEDGER_VERSION -->
+    <version>0.19.0-SNAPSHOT</version> <!-- BROOKLYN_HYPERLEDGER_VERSION -->
 
     <name>Brooklyn :: Hyperledger</name>
     <description>Apache Brooklyn blueprint to deploy and manage Hyperledger Fabric</description>
@@ -167,11 +167,6 @@
                                     <file>${project.basedir}/catalog/hyperledger/multi-cluster.bom</file>
                                     <type>bom</type>
                                     <classifier>multi-cluster</classifier>
-                                </artifact>
-                                <artifact>
-                                    <file>${project.basedir}/catalog/hyperledger/single-cluster-1-0.bom</file>
-                                    <type>bom</type>
-                                    <classifier>single-cluster-1-0</classifier>
                                 </artifact>
                                 <artifact>
                                     <file>${project.build.outputDirectory}/feature.xml</file>

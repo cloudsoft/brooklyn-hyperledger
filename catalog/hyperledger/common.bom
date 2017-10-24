@@ -1,71 +1,117 @@
 brooklyn.catalog:
-  version: 0.18.0-SNAPSHOT # BROOKLYN_HYPERLEDGER_VERSION
+  version: 0.19.0-SNAPSHOT # BROOKLYN_HYPERLEDGER_VERSION
 
   publish:
     description: |
-      Entities for running the Hyperledger Fabric project in Apache Brooklyn.
-    license_code: Apache-2.0
+      Entities for Hyperledger Fabric.
+    license_code: APACHE-2.0
     icon_url: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
 
   items:
-  - id: hyperledger-docker-engine
-    description: "The engine for running Docker containers"
-    itemType: entity
-    item:
+    - id: hyperledger-docker-engine
+      description: |
+        The Docker engine for running containers.
+      itemType: entity
+      item:
+        name: "hyperledger-docker-engine"
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
 
-      name: "Docker Engine (host)"
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        brooklyn.parameters:
+          - name: docker.package
+            description: "Docker Package Name"
+            type: string
+            default: "docker-ce"
+          - name: docker.port
+            description: "Docker Package Number"
+            type: integer
+            default: 2376
 
-      install.command: |
-        sudo yum -y update
-        sudo tee /etc/yum.repos.d/docker.repo <<-'EOF'
-        [dockerrepo]
-        name=Docker Repository
-        baseurl=https://yum.dockerproject.org/repo/main/centos/$releasever/
-        enabled=1
-        gpgcheck=1
-        gpgkey=https://yum.dockerproject.org/gpg
-        EOF
-        sudo yum -y install docker-engine
+        brooklyn.config:
+          shell.env:
+            DOCKER_PACKAGE: $brooklyn:config("docker.package")
+            HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+            DOCKER_PORT: $brooklyn:config("docker.port")
 
-      post.install.command: |
-        # Configure Docker
-        sudo mkdir -p /etc/systemd/system/docker.service.d
-        echo "[Service]" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
-        echo "ExecStart=" | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
-        echo 'ExecStart=/usr/bin/docker daemon -D --api-cors-header="*" --storage-driver=devicemapper -H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock' | sudo tee --append /etc/systemd/system/docker.service.d/docker.conf > /dev/null
+          install.command: |
+            sudo yum -y update
+            sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+            sudo yum-config-manager --add-repo \
+              https://download.docker.com/linux/centos/docker-ce.repo
+            sudo yum-config-manager --enable extras
+            sudo yum-config-manager --enable epel-testing
+            sudo yum install -y ${DOCKER_PACKAGE}
 
-        sudo systemctl enable docker.service
-        sudo systemctl daemon-reload
+          post.install.command: |
+            echo "[HLF] docker installed"
 
-      launch.command: |
-        sudo service docker start
+          customize.command: |
+            sudo tee /etc/docker/daemon.json <<EOF
+            {
+              "debug": true,
+              "hosts": [
+                "unix://var/run/docker.sock",
+                "tcp://0.0.0.0:${DOCKER_PORT}"
+              ],
+              "labels": [
+                "org.apache.brooklyn.entity=hyperledger-docker-engine"
+              ]
+            }
+            EOF
 
-      stop.command: |
-        sudo service docker stop
+          launch.command: |
+            sudo service docker start
+            echo "[HLF] docker started"
 
-      checkRunning.command: |
-        sudo service docker status
+          stop.command: |
+            sudo service docker stop
 
-      provisioning.properties:
-        osFamily: centos
-        minRam: 4gb
-        installDevUrandom: true
-        required.ports:
-          - 22
-          - 4243
-          - 7050
-          - 7051
-          - 7052
-          - 7053
-          - 7054
-          - 7055
-          - 7056
-          - 7057
-          - 7058
-          - 7059
-          - 8080
-          - 8888
-          - 9999
+          checkRunning.command: |
+            sudo service docker status
 
-      childStartMode: foreground_late
+          provisioning.properties:
+            osFamily: centos
+            minRam: 4gb
+            installDevUrandom: true
+            required.ports:
+              [ 22, 4243, 7050, 7051, 7052, 7053, 7054, 7055, 7056, 7057, 7058, 7059, 8080, 8888, 9999 ]
+
+          childStartMode: foreground_late
+
+    - id: hyperledger-docker-container
+      description: |
+        The Docker container for running Hyperledger images.
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        name: "hyperledger-docker-container"
+
+        brooklyn.parameters:
+          - name: hyperledger.version
+            description: "Hyperledger Version"
+            type: string
+            default: "1.0.3"
+          - name: container.name
+            description: "Container Name"
+            type: string
+            constraints:
+              - required
+
+        brooklyn.config:
+          shell.env:
+            ENTITY_ID: $brooklyn:entityId()
+            HYPERLEDGER_VERSION:
+              $brooklyn:formatString:
+                - "x86_64-%s"
+                - $brooklyn:config("hyperledger.version")
+            DOCKER_PORT: $brooklyn:config("docker.port")
+            CONTAINER_NAME: $brooklyn:config("container.name")
+
+          post.install.command: |
+            echo "[HLF] container ${ENTITY_ID} installed"
+
+          stop.command: |
+            sudo docker rm -f ${CONTAINER_NAME}
+
+          checkRunning.command: |
+            STATUS=$(sudo docker inspect -f {{.State.Running}} ${CONTAINER_NAME})
+            sudo service docker status && [ "${STATUS}" = "true" ]

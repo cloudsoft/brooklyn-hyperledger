@@ -2,14 +2,26 @@ brooklyn.catalog:
   items:
     - classpath://io.brooklyn.hyperledger:hyperledger/catalog.bom
 
-    - id: hyperledger-fabric-single-cluster-1-0-template
-      name: "Hyperledger Fabric 1.0 Cluster"
+    - id: hyperledger-fabric-single-cluster-template
+      name: "hyperledger-fabric-cluster"
       iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
       itemType: template
       publish:
-        license_code: Apache-2.0
+        license_code: APACHE-2.0
         overview: README.md
       item:
         services:
-          - type: hyperledger-fabric-single-cluster-1-0-application
-            name: "Hyperledger Fabric 1.0 Cluster"
+          - type: hyperledger-fabric-single-cluster-application
+            name: "hyperledger-fabric-cluster"
+
+    - id: hyperledger-fabric-development-cluster-template
+      name: "hyperledger-fabric-development"
+      iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
+      itemType: template
+      publish:
+        license_code: APACHE-2.0
+        overview: README.md
+      item:
+        services:
+          - type: hyperledger-fabric-development-cluster-application
+            name: "hyperledger-fabric-development"

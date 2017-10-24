@@ -1,415 +1,288 @@
 brooklyn.catalog:
-  version: 0.18.0-SNAPSHOT # BROOKLYN_HYPERLEDGER_VERSION
+  version: 0.19.0-SNAPSHOT # BROOKLYN_HYPERLEDGER_VERSION
 
   publish:
     description: |
-      Entities for running the Hyperledger Fabric project in Apache Brooklyn.
-    license_code: Apache-2.0
+      Entities for a Hyperledger Fabric cluster.
+    license_code: APACHE-2.0
     icon_url: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
 
   items:
-  - id: hyperledger-fabric-single-cluster-template
-    description: |
-      A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
-      validating peer node, and a single cluster of validating peer nodes running in a
-      single location.
-    name: "Hyperledger Fabric Cluster"
-    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
-    itemType: template
-    item:
-      services:
-      - type: hyperledger-fabric-single-cluster-application
-        name: "Hyperledger Fabric Cluster"
+    - id: hyperledger-fabric-single-cluster-application
+      name: "hyperledger-fabric-cluster"
+      iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.stock.BasicApplication
 
-  - id: hyperledger-fabric-single-cluster-application
-    description: |
-      A Hyperledger Fabric cluster of a membership services node, a CLI node, a root
-      validating peer node, and cluster(s) of validating peer nodes running in a single
-      location.
-    publish:
-      license_code: Apache-2.0
-      overview: README.md
-    name: "Hyperledger Fabric Cluster"
-    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
-    itemType: entity
-    item:
-      type: org.apache.brooklyn.entity.stock.BasicApplication
+        brooklyn.parameters:
+          - name: hyperledger.num.peers
+            description: "Peers"
+            type: integer
+            default: 2
+            constraints:
+              - required
 
-      brooklyn.parameters:
-      - name: hyperledger.peers.per.location
-        description: |
-          The number of Hyperledger Fabric validating peer nodes to create in the single
-          location.
-        type: integer
-        default: 4
-        constraints:
-          - required
-      - name: hyperledger.pbft.request.timeout
-        description: |
-          The number of seconds the PBFT plugin should wait when making requests.
-        type: integer
-        default: 120
-        constraints:
-          - required
-      - name: hyperledger.app.timeout
-        description: |
-          The number of seconds the demo app should wait between deploy, invoke, and query
-          steps.
-        type: integer
-        default: 60
-        constraints:
-          - required
+        brooklyn.children:
+          - type: hyperledger-ca-host
+            name: "hyperledger-ca-host"
+            id: my-hyperledger-ca-host
+          - type: hyperledger-orderer-host
+            name: "hyperledger-orderer-host"
+            id: my-hyperledger-orderer-host
+          - type: hyperledger-peer-cluster
+            name: "hyperledger-peer-cluster"
+            id: my-hyperledger-peer-cluster
+          - type: hyperledger-cli-host
+            name: "hyperledger-cli-host"
+            id: my-hyperledger-cli-host
 
-      brooklyn.config:
-        hyperledger.peers.per.location: 4
-        hyperledger.pbft.request.timeout: 120
-        hyperledger.app.timeout: 60
+    - id: hyperledger-fabric-development-cluster-application
+      name: "hyperledger-fabric-development-cluster"
+      description: |
+        Hyperledger Fabric development cluster. Deploys all components on
+        one VM running Docker, and the CA service on another.
+      iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.stock.BasicApplication
 
-      brooklyn.children:
-      - type: hyperledger-fabric-single-cluster
-        name: "Hyperledger Fabric Cluster"
+        brooklyn.parameters:
+          - name: hyperledger.num.peers
+            description: "Peers"
+            type: integer
+            default: 2
+            constraints:
+              - required
 
-  - id: hyperledger-fabric-single-cluster
-    item:
-      name: "Hyperledger Fabric Cluster"
-      type: org.apache.brooklyn.entity.stock.BasicApplication
+        brooklyn.children:
+          - type: hyperledger-ca-host
+            name: "hyperledger-ca-host"
+            id: my-hyperledger-ca-host
+          - type: hyperledger-docker-engine
+            name: "hyperledger-docker-engine"
+            brooklyn.children:
+              - type: hyperledger-orderer-node
+                name: "hyperledger-orderer-node"
+                id: my-hyperledger-orderer-node
+              - type: hyperledger-peer-cluster
+                name: "hyperledger-peer-cluster"
+                id: my-hyperledger-peer-cluster
+                brooklyn.config:
+                  firstMemberSpec:
+                    $brooklyn:entitySpec:
+                      type: hyperledger-peer-node
+                      name: "hyperledger-leader-node"
+                      id: my-hyperledger-leader-node
+                  memberSpec:
+                    $brooklyn:entitySpec:
+                      type: hyperledger-peer-node
+                      name: "hyperledger-peer-node"
+                      brooklyn.config:
+                        is.leader.node: false
+                        latch.launch: $brooklyn:component("my-hyperledger-leader-node").attributeWhenReady("service.isUp")
+              - type: hyperledger-cli-node
+                name: "hyperledger-cli-node"
+                id: my-hyperledger-cli-node
 
-      brooklyn.children:
-      - type: hyperledger-vp-cluster
-        name: "Hyperledger Validating Peer Cluster"
-        id: my-hyperledger-fabric-vp-cluster
+    - id: hyperledger-ca-host
+      itemType: entity
+      item:
+        type: hyperledger-docker-engine
+        name: "hyperledger-ca-host"
 
-      - type: hyperledger-services-host
-        name: "Membership Services and CLI Host"
+        brooklyn.children:
+          - type: hyperledger-ca-node
+            id: my-hyperledger-ca-node
 
-  - id: hyperledger-services-host
-    description: |
-      A Docker host running a Hyperledger Fabric Membership Services node, a CLI node, a
-      sequence node, and the root validating peer node in separate containers.
-    itemType: entity
-    item:
+    - id: hyperledger-ca-node
+      itemType: entity
+      item:
+        type: hyperledger-docker-container
+        name: "hyperledger-ca-node"
 
-      name: "Membership Services and CLI Docker Host"
-      type: hyperledger-docker-engine
-
-      brooklyn.children:
-      - type: hyperledger-membersrvc-node
-        id: my-hyperledger-membersrvc-node
-
-      - type: hyperledger-cli-node
-        id: my-hyperledger-cli-node
-
-  - id: hyperledger-membersrvc-node
-    description: "A Hyperledger Fabric membership services node"
-    itemType: entity
-    item:
-
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: Membership Services Node
-
-      install.command: |
-        sudo docker pull hyperledger/fabric-membersrvc:x86_64-0.6.1-preview
-
-      post.install.command: |
-        echo "Overriding parent post.install.command with no-op"
-
-      launch.command: |
-        nohup sudo docker run --name=membersrvc \
-            --restart=always \
-            -i \
-            -p 7054:7054 \
-            -e CORE_LOGGING_LEVEL=info \
-            hyperledger/fabric-membersrvc:x86_64-0.6.1-preview membersrvc >> ~/membersrvc.log 2>&1&
-
-      checkRunning.command: |
-        STATUS=$(sudo docker inspect -f {{.State.Running}} membersrvc)
-        sudo service docker status && [ "${STATUS}" = "true" ]
-
-      brooklyn.initializers:
-      - type: org.apache.brooklyn.core.sensor.StaticSensor
         brooklyn.config:
-          name: secret.keys
-          targetType: java.lang.String
-          static.value: "MwYpmSRjupbT;5wgHK9qqYaPy;vQelbRvja7cJ;9LKqKH5peurL;Pqh90CEW5juZ;FfdvDkAdY81P;QiXJgHyV4t7A;twoKZouEyLyB;BxP7QNh778gI;wu3F1EwJWHvQ"
+          container.name: "fabric-ca"
 
-  - id: hyperledger-cli-node
-    description: "A Hyperledger Fabric CLI node"
-    itemType: entity
-    item:
+          launch.command: |
+            sudo docker run \
+                --name=${CONTAINER_NAME} \
+                --restart=always \
+                -d \
+                -p 8888:8888 \
+                hyperledger/fabric-ca:${HYPERLEDGER_VERSION} fabric-ca-server start -b admin:adminpw
 
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: "CLI Node"
+    - id: hyperledger-orderer-host
+      itemType: entity
+      item:
+        type: hyperledger-docker-engine
+        name: "hyperledger-orderer-host"
 
-      shell.env:
-        HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("host.address")
-        HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
-        HYPERLEDGER_APP_TIMEOUT: $brooklyn:config("hyperledger.app.timeout")
-        HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+        brooklyn.children:
+          - type: hyperledger-orderer-node
+            id: my-hyperledger-orderer-node
 
-      install.command: |
-        sudo docker pull hyperledger/fabric-peer:x86_64-0.6.1-preview
-        sudo docker tag hyperledger/fabric-peer:x86_64-0.6.1-preview hyperledger/fabric-baseimage:latest
+    - id: hyperledger-orderer-node
+      itemType: entity
+      item:
+        type: hyperledger-docker-container
+        name: "hyperledger-orderer-node"
 
-      post.install.command: |
-        echo "Overriding parent post.install.command with no-op"
-
-      launch.command:  |
-        nohup sudo docker run --name=cli \
-            --restart=always \
-            -i \
-            -p 7051:7051 \
-            -p 7052:7052 \
-            -p 8080:8080 \
-            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:7051 \
-            -e CORE_PEER_ADDRESSAUTODETECT=false \
-            -e CORE_SECURITY_ENABLED=true \
-            -e CORE_SECURITY_PRIVACY=true \
-            -e HYPERLEDGER_ROOT_NODE_ADDRESS=$HYPERLEDGER_ROOT_NODE_ADDRESS \
-            -e HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS \
-            -e APP_HOME=/opt/gopath/src/github.com/hyperledger/fabric/examples/chaincode/go/asset_management/app \
-            hyperledger/fabric-peer:x86_64-0.6.1-preview /bin/bash -c \
-                "cd /opt/gopath/src/github.com/hyperledger/fabric/examples/chaincode/go/asset_management/app; \
-                cp /opt/gopath/src/github.com/hyperledger/fabric/peer/core.yaml .; \
-                sed -i \"s/0.0.0.0/$HYPERLEDGER_ROOT_NODE_ADDRESS/g\" core.yaml; \
-                sed -i \"s/localhost/$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS/g\" core.yaml; \
-                sed -i \"s/30/$HYPERLEDGER_APP_TIMEOUT/g\" app.go; \
-                curl -k -so infiniteloop.sh https://raw.githubusercontent.com/hyperledger/fabric/v0.6.1-preview/scripts/infiniteloop.sh; \
-                chmod +x infiniteloop.sh; \
-                ./infiniteloop.sh" >> ~/cli.log 2>&1&
-
-      checkRunning.command: |
-        STATUS=$(sudo docker inspect -f {{.State.Running}} cli)
-        sudo service docker status && [ "${STATUS}" = "true" ]
-
-      brooklyn.initializers:
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
-          name: "Run Demo Application"
-          description: "Runs the asset management demo application."
+          container.name: "fabric-orderer"
 
-          command: |
-            sudo docker exec -i cli bash '-c' 'cd $APP_HOME && go build && ./app' 2>&1
+          launch.command: |
+            sudo docker run \
+                --name=${CONTAINER_NAME} \
+                --restart=always \
+                -d \
+                -e ORDERER_GENERAL_LEDGERTYPE=ram \
+                -e ORDERER_GENERAL_BATCHTIMEOUT=10s \
+                -e ORDERER_GENERAL_MAXMESSAGECOUNT=10 \
+                -e ORDERER_GENERAL_MAXWINDOWSIZE=1000 \
+                -e ORDERER_GENERAL_LISTENADDRESS=0.0.0.0 \
+                -e ORDERER_GENERAL_LISTENPORT=7050 \
+                -e ORDERER_RAMLEDGER_HISTORY_SIZE=100 \
+                -e CONFIGTX_ORDERER_ORDERERTYPE=solo \
+                -p 29050:7050 \
+                hyperledger/fabric-orderer:${HYPERLEDGER_VERSION} orderer
 
-  - id: hyperledger-vp-cluster
-    description: "A cluster of Hyperledger Fabric validating peer nodes"
-    name: "Hyperledger Fabric Cluster"
-    iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
-    item:
-      type: org.apache.brooklyn.entity.group.DynamicCluster
+    - id: hyperledger-peer-cluster
+      name: "hyperledger-peer-cluster"
+      iconUrl: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
+      item:
+        type: org.apache.brooklyn.entity.group.DynamicCluster
 
-      brooklyn.config:
-        initialSize: $brooklyn:config("hyperledger.peers.per.location")
-
-      firstMemberSpec:
-        $brooklyn:entitySpec:
-          type: hyperledger-validating-peer-host
-          name: "Root Validating Peer Docker Host"
-          id: my-hyperledger-root-node
-
-          brooklyn.config:
-            is.root.node: true
-            launch.latch: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("service.isUp")
-
-      memberSpec:
-        $brooklyn:entitySpec:
-          type: hyperledger-validating-peer-host
-          name: "Validating Peer Docker Host"
-
-          brooklyn.config:
-            is.root.node: false
-            launch.latch: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("service.isUp")
-
-      brooklyn.enrichers:
-      - type: org.apache.brooklyn.enricher.stock.Aggregator
         brooklyn.config:
-          uniqueTag: node-address-aggregator
-          enricher.aggregator.excludeBlank: true
-          enricher.aggregating.fromMembers: true
-          enricher.sourceSensor: $brooklyn:sensor("host.address")
-          enricher.targetSensor: $brooklyn:sensor("node.host.address.list")
+          initialSize: $brooklyn:config("hyperledger.num.peers")
 
-  - id: hyperledger-validating-peer-host
-    description: |
-      A Docker host running a Hyperledger Fabric validating peer node in a container
-    itemType: entity
-    item:
+          firstMemberSpec:
+            $brooklyn:entitySpec:
+              type: hyperledger-peer-host
+              name: "hyperledger-leader-host"
+              id: my-hyperledger-leader-host
 
-      name: "Validating Peer Docker Host"
-      type: hyperledger-docker-engine
+              brooklyn.config:
+                is.leader.node: true
+                latch.launch: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("service.isUp")
+                post.launch.command: |
+                  sudo docker pull hyperledger/fabric-ccenv:${HYPERLEDGER_VERSION}
 
-      brooklyn.children:
-      - type: hyperledger-validating-peer-node
-        id: my-hyperledger-validating-peer-node
+          memberSpec:
+            $brooklyn:entitySpec:
+              type: hyperledger-peer-host
+              name: "hyperledger-peer-host"
 
-  - id: hyperledger-validating-peer-node
-    description: "A Hyperledger Fabric validating peer node"
-    itemType: entity
-    item:
+              brooklyn.config:
+                is.leader.node: false
+                latch.launch: $brooklyn:component("my-hyperledger-leader-node").attributeWhenReady("service.isUp")
 
-      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-      name: "Validating Peer Node"
+    - id: hyperledger-peer-host
+      itemType: entity
+      item:
+        type: hyperledger-docker-engine
+        name: "hyperledger-peer-host"
 
-      brooklyn.config:
-        hyperledger.peer.id:
-          $brooklyn:formatString:
-            - "vp%d"
-            - $brooklyn:config("cluster.member.id")
+        brooklyn.children:
+          - type: hyperledger-peer-node
+            id: my-hyperledger-peer-node
 
-      shell.env:
-        IS_ROOT_NODE: $brooklyn:config("is.root.node")
+    - id: hyperledger-peer-node
+      itemType: entity
+      item:
+        type: hyperledger-docker-container
+        name: "hyperledger-peer-node"
 
-        HYPERLEDGER_ROOT_NODE_ADDRESS: $brooklyn:component("my-hyperledger-root-node").attributeWhenReady("host.address")
-        HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("host.address")
-        HYPERLEDGER_CLUSTER_TOTAL_SIZE: $brooklyn:component("my-hyperledger-fabric-vp-cluster").attributeWhenReady("group.members.count")
-        HYPERLEDGER_PBFT_REQUEST_TIMEOUT: $brooklyn:config("hyperledger.pbft.request.timeout")
-        HYPERLEDGER_CLUSTER_INDEX: $brooklyn:config("cluster.member.id")
-        HYPERLEDGER_PEER_ID: $brooklyn:config("hyperledger.peer.id")
-
-        SECRET_KEYS: $brooklyn:component("my-hyperledger-membersrvc-node").attributeWhenReady("secret.keys")
-
-        HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
-
-      files.install:
-        "classpath://io.brooklyn.hyperledger:hyperledger/chaincode-request-templates/login-template.json": "login-template.json"
-        "classpath://io.brooklyn.hyperledger:hyperledger/chaincode-request-templates/query-template.json": "query-template.json"
-        "classpath://io.brooklyn.hyperledger:hyperledger/chaincode-request-templates/query-template-security.json": "query-template-security.json"
-
-      install.command: |
-        sudo docker pull hyperledger/fabric-peer:x86_64-0.6.1-preview
-        sudo docker tag hyperledger/fabric-peer:x86_64-0.6.1-preview hyperledger/fabric-baseimage:latest
-
-      post.install.command: |
-        echo "Overriding parent post.install.command with no-op"
-
-      launch.command: |
-        echo $HOST_ADDRESS > host-address
-        echo $HYPERLEDGER_PEER_ID > hyperledger.peer.id
-
-        IFS=';' read -ra SECRET_KEYS_ARRAY <<< "$SECRET_KEYS"
-        SECRET=${SECRET_KEYS_ARRAY[$HYPERLEDGER_CLUSTER_INDEX]}
-
-        # Additional arguments for peer nodes
-        if [ $IS_ROOT_NODE == "false" ]; then
-          PEER_NODE_ARG="-e CORE_PEER_DISCOVERY_ROOTNODE=$HYPERLEDGER_ROOT_NODE_ADDRESS:7051"
-        fi
-
-        nohup sudo docker run --name=$HYPERLEDGER_PEER_ID \
-            --restart=always \
-            -i \
-            -p 7050:7050 \
-            -p 7051:7051 \
-            -p 7052:7052 \
-            -p 7053:7053 \
-            -e CORE_VM_ENDPOINT=http://$HOST_ADDRESS:4243 \
-            -e CORE_PEER_ID=$HYPERLEDGER_PEER_ID \
-            $PEER_NODE_ARG \
-            -e CORE_PEER_ADDRESS=$HOST_ADDRESS:7051 \
-            -e CORE_PEER_ADDRESSAUTODETECT=false \
-            -e CORE_PEER_NETWORKID=dev \
-            -e CORE_LOGGING_LEVEL=info \
-            -e CORE_SECURITY_ENABLED=true \
-            -e CORE_SECURITY_PRIVACY=true \
-            -e CORE_SECURITY_ENROLLID=test_$HYPERLEDGER_PEER_ID \
-            -e CORE_SECURITY_ENROLLSECRET=$SECRET \
-            -e CORE_PEER_PKI_ECA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:7054 \
-            -e CORE_PEER_PKI_TCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:7054 \
-            -e CORE_PEER_PKI_TLSCA_PADDR=$HYPERLEDGER_MEMBERSRVC_NODE_ADDRESS:7054 \
-            -e CORE_PEER_VALIDATOR_CONSENSUS_PLUGIN=pbft \
-            -e CORE_PBFT_GENERAL_MODE=batch \
-            -e CORE_PBFT_GENERAL_N=$HYPERLEDGER_CLUSTER_TOTAL_SIZE \
-            -e CORE_PBFT_GENERAL_TIMEOUT_REQUEST=${HYPERLEDGER_PBFT_REQUEST_TIMEOUT}s \
-            hyperledger/fabric-peer:x86_64-0.6.1-preview peer node start >> ~/$HYPERLEDGER_PEER_ID.log 2>&1&
-
-      checkRunning.command: |
-        STATUS=$(sudo docker inspect -f {{.State.Running}} $(cat hyperledger.peer.id))
-        sudo service docker status && [ "${STATUS}" = "true" ]
-
-      brooklyn.initializers:
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
-          name: "Login User"
-          description: "Logs in a registered user"
+          container.name: "fabric-peer"
 
           shell.env:
-            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+            IS_LEADER_NODE: $brooklyn:config("is.leader.node")
+            HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+            ORDERER_ADDRESS: $brooklyn:component("my-hyperledger-orderer-node").attributeWhenReady("host.address")
+            PEER_ADDRESS: $brooklyn:component("my-hyperledger-peer-cluster").attributeWhenReady("cluster.first.entity").attributeWhenReady("host.address")
+            ID: $brooklyn:config("cluster.member.id")
+            CONTAINER_NAME:
+              $brooklyn:formatString:
+                - "%s%d"
+                - $brooklyn:config("container.name")
+                - $brooklyn:config("cluster.member.id")
 
-          command: |
-            timestamp=$(date +%s)
-            rest_endpoint=http://$(cat host-address):7050/registrar
+          launch.command: |
+            MIN_PORT="2$((${ID} + 70))50"
+            PEER_PORT="2$((${ID} + 70))51"
+            MAX_PORT="2$((${ID} + 70))59"
+            sudo docker run \
+                --name=${CONTAINER_NAME} \
+                --restart=always \
+                -d \
+                -e CORE_VM_ENDPOINT=http://${HOST_ADDRESS}:${DOCKER_PORT} \
+                -e CORE_PEER_ADDRESSAUTODETECT=false \
+                -e CORE_LOGGING_LEVEL=DEBUG \
+                -e CORE_NEXT=true \
+                -e CORE_PEER_ENDORSER_ENABLED=true \
+                -e CORE_PEER_COMMITTER_ENABLED=true \
+                -e CORE_PEER_PROFILE_ENABLED=false \
+                -e CORE_PEER_GOSSIP_ORGLEADER=${IS_LEADER_NODE} \
+                -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
+                -e CORE_PEER_GOSSIP_IGNORESECURITY=true \
+                -e CORE_PEER_GOSSIP_SKIPHANDSHAKE=true \
+                -e CORE_PEER_ID=peer${ID} \
+                -e CORE_PEER_ADDRESS=${HOST_ADDRESS}:${PEER_PORT} \
+                -e CORE_PEER_COMMITTER_LEDGER_ORDERER=${ORDERER_ADDRESS}:29050 \
+                -e CORE_PEER_GOSSIP_BOOTSTRAP=${PEER_ADDRESS}:27051 \
+                -e CORE_PEER_GOSSIP_EXTERNALENDPOINT=${HOST_ADDRESS}:${PEER_PORT} \
+                -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
+                -p ${MIN_PORT}-${MAX_PORT}:7050-7059 \
+                hyperledger/fabric-peer:${HYPERLEDGER_VERSION} peer node start -o ${ORDERER_ADDRESS}:29050
 
-            cp ${INSTALL_DIR}/login-template.json login-${timestamp}.json
-            sed -i "s/ENROLL_ID/${enrollId}/g" login-${timestamp}.json
-            sed -i "s/ENROLL_SECRET/${enrollSecret}/g" login-${timestamp}.json
+    - id: hyperledger-cli-host
+      itemType: entity
+      item:
+        type: hyperledger-docker-engine
+        name: "hyperledger-cli-host"
 
-            curl -H "Content-Type: application/json" -X POST -d @login-${timestamp}.json ${rest_endpoint}
+        brooklyn.children:
+          - type: hyperledger-cli-node
+            id: my-hyperledger-cli-node
 
-          parameters:
-            enrollId:
-              description: "The username"
+    - id: hyperledger-cli-node
+      itemType: entity
+      item:
+        type: hyperledger-docker-container
+        name: "hyperledger-cli-node"
 
-            enrollSecret:
-              description: "The password"
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
         brooklyn.config:
-          name: "Check Login"
-          description: "Checks if a user is logged in"
-
-          command: |
-            rest_endpoint=http://$(cat host-address):7050/registrar/${enrollId}
-            curl ${rest_endpoint}
-
-          parameters:
-            enrollId:
-              description: "The username"
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: "Query Chaincode"
-          description: "Queries an example chaincode"
+          latch.start: $brooklyn:component("my-hyperledger-peer-cluster").attributeWhenReady("service.isUp")
 
           shell.env:
-            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+            HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+            PEER_ADDRESS: $brooklyn:component("my-hyperledger-peer-cluster").attributeWhenReady("cluster.first.entity").attributeWhenReady("host.address")
 
-          command: |
-            timestamp=$(date +%s)
-            rest_endpoint=http://$(cat host-address):7050/chaincode
+          container.name: "fabric-cli"
 
-            cp ${INSTALL_DIR}/query-template-security.json query-${timestamp}-security.json
-            sed -i "s/METHOD/query/g" query-${timestamp}-security.json
-            sed -i "s/NAME/${name}/g" query-${timestamp}-security.json
-            sed -i "s/FUNCTION/${function}/g" query-${timestamp}-security.json
-            sed -i "s/ARGUMENTS/${args}/g" query-${timestamp}-security.json
-            sed -i "s/METADATA/${metadata}/g" query-${timestamp}-security.json
-            sed -i "s/SECURE_CONTEXT/${secureContext}/g" query-${timestamp}-security.json
-            sed -i "s/TRANSACTION_ID/${timestamp}/g" query-${timestamp}-security.json
+          launch.command: |
+            sudo docker run \
+                --name=${CONTAINER_NAME} \
+                --restart=always \
+                -d \
+                -e CORE_VM_ENDPOINT=http://${HOST_ADDRESS}:${DOCKER_PORT} \
+                -e CORE_PEER_ADDRESSAUTODETECT=false \
+                -e CORE_LOGGING_LEVEL=DEBUG \
+                -e CORE_NEXT=true \
+                -e CORE_PEER_ENDORSER_ENABLED=true \
+                -e CORE_PEER_COMMITTER_ENABLED=true \
+                -e CORE_PEER_PROFILE_ENABLED=false \
+                -e CORE_PEER_GOSSIP_ORGLEADER=false \
+                -e CORE_PEER_GOSSIP_USELEADERELECTION=false \
+                -e CORE_PEER_GOSSIP_IGNORESECURITY=true \
+                -e CORE_PEER_GOSSIP_SKIPHANDSHAKE=true \
+                -e CORE_PEER_ID=cli \
+                -e CORE_PEER_ADDRESS=${PEER_ADDRESS}:27051 \
+                -e GOPATH=/opt/golang \
+                -p 28050-28059:7050-7059 \
+                hyperledger/fabric-peer:${HYPERLEDGER_VERSION} bash -c 'while true; do sleep 20170504; done'
 
-            curl -H "Content-Type: application/json" -X POST -d @query-${timestamp}-security.json ${rest_endpoint}
-
-          parameters:
-            name:
-              description: "The chaincode container name (hash)"
-
-            function:
-              description: "The function to run"
-              defaultValue: "query"
-
-            args:
-              description: "Arguments for the function"
-              defaultValue: "[]"
-
-            metadata:
-              description: "Metadata for the query call"
-
-            secureContext:
-              description: "The registered user"
-
-      - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-        brooklyn.config:
-          name: "List Peers"
-          description: "Retrieve information about the network of peer nodes comprising the blockchain network"
-
-          command: |
-            rest_endpoint=http://$(cat host-address):7050/network/peers
-            curl ${rest_endpoint}
+          post.launch.command: |
+            sudo docker exec fabric-cli bash -c \
+              'apt-get -y update && apt-get -y install golang git && mkdir /opt/golang'
