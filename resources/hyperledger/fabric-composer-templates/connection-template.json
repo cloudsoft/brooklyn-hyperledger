@@ -1,0 +1,9 @@
+{
+    "type": "hlf",
+    "membershipServicesURL": "grpc://${config['hyperledger.membersrvc']}:7054",
+    "peerURL": "grpc://${config['hyperledger.rootnode']}:7051",
+    "eventHubURL": "grpc://${config['hyperledger.rootnode']}:7053",
+    "keyValStore": "${config['onbox.base.dir']}.composer-credentials",
+    "deployWaitTime": "300",
+    "invokeWaitTime": "100"
+}

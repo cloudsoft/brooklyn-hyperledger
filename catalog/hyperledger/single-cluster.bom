@@ -59,6 +59,10 @@ brooklyn.catalog:
           - type: hyperledger-ca-host
             name: "hyperledger-ca-host"
             id: my-hyperledger-ca-host
+            brooklyn.children:
+              - type: hyperledger-fabric-composer-node
+                name: "hyperledger-fabric-composer-node"
+                id: hyperledger-fabric-composer-node
           - type: hyperledger-docker-engine
             name: "hyperledger-docker-engine"
             brooklyn.children:
