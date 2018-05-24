@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: 0.18.0-SNAPSHOT # BROOKLYN_HYPERLEDGER_VERSION
+  version: 0.18.0-20180524.1624 # BROOKLYN_HYPERLEDGER_VERSION
   icon_url: classpath://io.brooklyn.hyperledger:icon/hyperledger-fabric.png
   license_code: Apache-2.0
   license_url: http://www.apache.org/licenses/LICENSE-2.0.txt
